@@ -144,6 +144,12 @@ input, select, textarea {
   -webkit-appearance: none;
 }
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--secondary); box-shadow: 0 0 0 3px rgba(25, 135, 117, .25); }
+/* checkboxes moeten hun native vinkje houden (appearance:none hierboven sloopte ze) */
+input[type=checkbox] {
+  appearance: auto; -webkit-appearance: checkbox;
+  width: 22px; height: 22px; padding: 0;
+  accent-color: var(--accent);
+}
 label {
   display: block; font-size: .72rem; font-weight: 600;
   text-transform: uppercase; letter-spacing: .07em;

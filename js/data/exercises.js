@@ -1,5 +1,6 @@
 // Automatisch gegenereerd uit ExerciseLibrary.swift + aanvullingen uit trainingsrapport
-// Alle video-ID's geverifieerd via YouTube oEmbed op 2026-08-18
+// Video's gestandaardiseerd op ScottHermanFitness waar beschikbaar (45x, oEmbed-geverifieerd 2026-08-19);
+// overige oefeningen: best beschikbare alternatief of zoek-fallback.
 export const EXERCISES = [
  {
   "id": "chest_barbell_bench_press",
@@ -136,7 +137,7 @@ export const EXERCISES = [
    "bodyweight"
   ],
   "difficulty": 1,
-  "video": "IODxDxX7oi4",
+  "video": "wxhNoKZlfY8",
   "instructions": "Plankpositie, handen op schouderbreedte. Zak tot borst bijna grond raakt, druk omhoog.",
   "recoveryHours": 24
  },
@@ -274,7 +275,7 @@ export const EXERCISES = [
    "pullUpBar"
   ],
   "difficulty": 4,
-  "video": "Hdc7Mw6BIEE",
+  "video": "HuuyDNGrCI8",
   "instructions": "Hang aan stang met brede grip. Trek kin boven stang, gecontroleerd zakken.",
   "recoveryHours": 48
  },
@@ -290,7 +291,7 @@ export const EXERCISES = [
    "pullUpBar"
   ],
   "difficulty": 3,
-  "video": null,
+  "video": "bZ6Ysk9jf6E",
   "instructions": "Hang aan stang met onderhandse grip. Trek kin boven stang.",
   "recoveryHours": 48
  },
@@ -465,7 +466,7 @@ export const EXERCISES = [
    "dumbbells"
   ],
   "difficulty": 1,
-  "video": "OuG1smZTsQQ",
+  "video": "3VcKaXpzqRo",
   "instructions": "Sta rechtop, dumbbells langs lichaam. Til zijwaarts op tot schouderhoogte.",
   "recoveryHours": 24,
   "altEquipment": [
@@ -482,7 +483,7 @@ export const EXERCISES = [
    "dumbbells"
   ],
   "difficulty": 1,
-  "video": null,
+  "video": "-t7fuZ0KhDA",
   "instructions": "Sta rechtop, til dumbbells naar voren op tot schouderhoogte.",
   "recoveryHours": 24
  },
@@ -697,7 +698,7 @@ export const EXERCISES = [
    "inclineBench"
   ],
   "difficulty": 2,
-  "video": "DCe8f6vMe9A",
+  "video": "soxrZlIl35U",
   "instructions": "Lig op schuine bank (45 graden). Laat armen hangen, curl dumbbells omhoog.",
   "recoveryHours": 36
  },
@@ -712,7 +713,7 @@ export const EXERCISES = [
    "inclineBench"
   ],
   "difficulty": 2,
-  "video": null,
+  "video": "BsE9zhhTU1A",
   "instructions": "Leun met borst op schuine bank (omgekeerd). Laat armen hangen, curl omhoog.",
   "recoveryHours": 36,
   "altEquipment": [
@@ -814,7 +815,7 @@ export const EXERCISES = [
    "dumbbells"
   ],
   "difficulty": 1,
-  "video": null,
+  "video": "6SS6K3lAwZ8",
   "instructions": "Buig voorover, elleboog langs lichaam. Strek arm naar achteren.",
   "recoveryHours": 24
  },
@@ -929,7 +930,7 @@ export const EXERCISES = [
    "kettlebell"
   ],
   "difficulty": 2,
-  "video": "aNDUbH_Uv4g",
+  "video": "MeIiIdhvXT4",
   "instructions": "Houd kettlebell/dumbbell voor borst. Squat diep, houd borst omhoog.",
   "recoveryHours": 48,
   "altEquipment": [
@@ -1019,7 +1020,7 @@ export const EXERCISES = [
    "bodyweight"
   ],
   "difficulty": 2,
-  "video": null,
+  "video": "y-wV4Venusw",
   "instructions": "Rug tegen de muur, zak tot bovenbenen horizontaal. Houd positie zo lang mogelijk.",
   "recoveryHours": 24
  },
@@ -1132,7 +1133,7 @@ export const EXERCISES = [
    "dumbbells"
   ],
   "difficulty": 3,
-  "video": null,
+  "video": "DGavj41F_Cs",
   "instructions": "Sta op één been. Buig voorover vanuit heup, vrije been strekt naar achteren. Houd rug recht.",
   "recoveryHours": 48,
   "altEquipment": [
@@ -1203,7 +1204,7 @@ export const EXERCISES = [
    "bodyweight"
   ],
   "difficulty": 1,
-  "video": null,
+  "video": "8bbE64NuDTU",
   "instructions": "Lig op rug, knieen gebogen. Druk heupen omhoog, kneep bilspieren.",
   "recoveryHours": 24
  },
@@ -1293,7 +1294,7 @@ export const EXERCISES = [
    "bodyweight"
   ],
   "difficulty": 1,
-  "video": "ASdvN_XEl_c",
+  "video": "pSHjTRCQxIw",
   "instructions": "Op onderarmen en tenen. Houd lichaam recht, span core aan.",
   "recoveryHours": 24
  },
@@ -1503,7 +1504,7 @@ export const EXERCISES = [
    "bodyweight"
   ],
   "difficulty": 3,
-  "video": "dZgVxmf6jkA",
+  "video": "wS4OsJ4yzx4",
   "instructions": "Squat, handen op grond, spring naar plank, push-up, spring terug, spring omhoog.",
   "recoveryHours": 24
  },
@@ -1655,7 +1656,7 @@ export const EXERCISES = [
    "bodyweight"
   ],
   "difficulty": 2,
-  "video": null,
+  "video": "ORT4oJ_R8Qs",
   "instructions": "Sta op één been op rand van verhoging. Druk omhoog, zak langzaam voorbij horizontaal.",
   "recoveryHours": 24,
   "altEquipment": [
@@ -1727,7 +1728,7 @@ export const EXERCISES = [
    "dumbbells"
   ],
   "difficulty": 2,
-  "video": null,
+  "video": "Tgi5SNDbBZQ",
   "instructions": "Pak zware dumbbells op. Loop gecontroleerd, schouders naar achteren, core aangespannen.",
   "recoveryHours": 36,
   "altEquipment": [
