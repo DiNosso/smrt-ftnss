@@ -11,12 +11,24 @@ import { applyCustomData } from './engine.js';
 
 applyCustomData();
 
+// Strakke lijn-iconen (feather-stijl) i.p.v. emoji's
+const svg = (inner, fill = false) =>
+  `<svg viewBox="0 0 24 24" fill="${fill ? 'currentColor' : 'none'}" stroke="${fill ? 'none' : 'currentColor'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+
+const ICONS = {
+  today: svg('<path d="M13 2 3 14h7l-1 8 11-12h-7l1-8z"/>', true),
+  week: svg('<rect x="3" y="4" width="18" height="17" rx="3"/><path d="M16 2v4M8 2v4M3 9.5h18"/>'),
+  library: svg('<path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11"/>'),
+  progress: svg('<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>'),
+  settings: svg('<path d="M4 21v-6M4 9V3M12 21v-9M12 6V3M20 21v-4M20 11V3"/><path d="M2 15h4M10 8h4M18 17h4"/>'),
+};
+
 const TABS = [
-  { id: 'today', label: 'Vandaag', ico: '⚡', render: renderToday },
-  { id: 'week', label: 'Week', ico: '🗓', render: renderWeek },
-  { id: 'library', label: 'Oefeningen', ico: '📚', render: renderLibrary },
-  { id: 'progress', label: 'Progressie', ico: '📈', render: renderProgress },
-  { id: 'settings', label: 'Instellingen', ico: '⚙️', render: renderSettings },
+  { id: 'today', label: 'Vandaag', render: renderToday },
+  { id: 'week', label: 'Week', render: renderWeek },
+  { id: 'library', label: 'Oefeningen', render: renderLibrary },
+  { id: 'progress', label: 'Progressie', render: renderProgress },
+  { id: 'settings', label: 'Instellingen', render: renderSettings },
 ];
 
 let current = location.hash.replace('#', '') || 'today';
@@ -37,8 +49,10 @@ export function render() {
 
   tabbar.innerHTML = '';
   for (const t of TABS) {
-    tabbar.append(el('button', { class: t.id === current ? 'active' : '', onclick: () => nav(t.id) },
-      el('span', { class: 'ico' }, t.ico), t.label));
+    const b = el('button', { class: t.id === current ? 'active' : '', onclick: () => nav(t.id) });
+    b.innerHTML = ICONS[t.id];
+    b.append(t.label);
+    tabbar.append(b);
   }
   app.innerHTML = '';
   app.scrollTop = 0;

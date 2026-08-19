@@ -190,12 +190,12 @@ function checkinCard(iso, ctx) {
 
   const state = { motivation: null, sleepScore: null, soreness: {} };
   const scaleRow = (key) => {
-    const row = el('div', { class: 'row', style: 'gap:6px' });
+    const row = el('div', { class: 'seg' });
     for (let v = 1; v <= 5; v++) {
-      const b = el('button', { class: 'btn-sm grow', onclick: () => {
+      const b = el('button', { onclick: () => {
         state[key] = v;
-        row.querySelectorAll('button').forEach(x => x.classList.remove('btn-secondary'));
-        b.classList.add('btn-secondary');
+        row.querySelectorAll('button').forEach(x => x.classList.remove('on'));
+        b.classList.add('on');
       } }, String(v));
       row.append(b);
     }
