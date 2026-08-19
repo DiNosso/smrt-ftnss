@@ -39,9 +39,12 @@ export function sheet(contentEl, { onClose } = {}) {
   return close;
 }
 
-/** YouTube-embed die pas laadt na een tik (scheelt data & tracking). Zonder video-ID: zoekknop. */
+/** YouTube-embed die pas laadt na een tik (scheelt data & tracking). Zonder video-ID: zoekknop.
+    Met cast-hulp: open in de YouTube-app (cast naar elke TV) of AirPlay via fullscreen. */
 export function videoBlock(exercise) {
+  const box = el('div');
   const wrap = el('div', { class: 'video-wrap' });
+  box.append(wrap);
   if (exercise.video) {
     const thumb = el('button', { class: 'video-thumb', 'aria-label': 'Speel instructievideo af' },
       el('img', { src: `https://i.ytimg.com/vi/${exercise.video}/hqdefault.jpg`, alt: '', loading: 'lazy' }),
@@ -51,18 +54,25 @@ export function videoBlock(exercise) {
       wrap.innerHTML = '';
       wrap.append(el('iframe', {
         src: `https://www.youtube-nocookie.com/embed/${exercise.video}?autoplay=1&rel=0&playsinline=1`,
-        allow: 'autoplay; encrypted-media; picture-in-picture',
+        allow: 'autoplay; encrypted-media; picture-in-picture; fullscreen',
         allowfullscreen: true,
       }));
     });
     wrap.append(thumb);
+    box.append(el('div', { class: 'spread', style: 'margin:2px 0 8px' },
+      el('span', { class: 'tiny dim' }, '📺 Op TV: fullscreen → AirPlay, of cast via de app'),
+      el('a', {
+        class: 'btn btn-sm', style: 'text-decoration:none; flex:none',
+        href: `https://www.youtube.com/watch?v=${exercise.video}`,
+        target: '_blank', rel: 'noopener',
+      }, 'Open in YouTube ↗')));
   } else {
     const q = encodeURIComponent(exercise.name + ' proper form');
     wrap.append(el('a', { class: 'video-thumb', href: `https://www.youtube.com/results?search_query=${q}`, target: '_blank', rel: 'noopener', style: 'text-decoration:none' },
       el('span', { class: 'play' }, '🔍'),
       el('span', { class: 'tiny', style: 'position:relative' }, 'Nog geen vaste video — zoek op YouTube')));
   }
-  return wrap;
+  return box;
 }
 
 export const DAY_NL = ['ma', 'di', 'wo', 'do', 'vr', 'za', 'zo'];

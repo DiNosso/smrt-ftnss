@@ -126,9 +126,13 @@ export async function renderToday(app, ctx) {
   app.append(el('div', { class: 'card' },
     el('h5', {}, 'Iets anders doen?'),
     el('div', { class: 'row wrap mt' },
+      el('button', { class: 'btn-sm', style: 'border-color:rgba(224,122,122,.4)', onclick: () => {
+        update(st => { st.swaps[iso] = 'rest'; }); ctx.render();
+      } }, '🚫 Kan vandaag niet'),
       Object.values(SESSIONS).filter(s => s.id !== 'rest').map(s =>
         el('button', { class: 'btn-sm', onclick: () => { update(st => { st.swaps[iso] = s.id; }); ctx.render(); } }, s.name.split('·')[1]?.trim() || s.name)),
-      get().swaps[iso] ? el('button', { class: 'btn-sm btn-ghost', style: 'color:var(--accent)', onclick: () => { update(st => { delete st.swaps[iso]; }); ctx.render(); } }, '↺ Automatische planning') : null)));
+      get().swaps[iso] ? el('button', { class: 'btn-sm btn-ghost', style: 'color:var(--accent)', onclick: () => { update(st => { delete st.swaps[iso]; }); ctx.render(); } }, '↺ Automatische planning') : null),
+    el('p', { class: 'tiny dim mt mb0' }, 'Kun je niet? De gemiste sessie verdwijnt niet — de wachtrij schuift automatisch op naar de eerstvolgende dag dat het wél past.')));
 
   // Dagelijkse gewoontes
   const habits = get().habits[iso] || {};
