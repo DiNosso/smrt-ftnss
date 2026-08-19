@@ -1,5 +1,5 @@
 // Service worker: offline-first voor app-bestanden, netwerk voor API's
-const CACHE = 'fait-v8';
+const CACHE = 'fait-v10';
 const ASSETS = [
   './', 'index.html', 'css/style.css', 'manifest.webmanifest',
   'js/app.js', 'js/state.js', 'js/icu.js', 'js/engine.js',

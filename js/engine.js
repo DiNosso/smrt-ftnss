@@ -113,6 +113,36 @@ function sessionMusclesReady(session, dayIso, recMap) {
   return session.focus.every(m => (recMap[m] || 0) <= dayEnd);
 }
 
+// ---------- Geplande andere sporten (handmatig + intervals.icu-kalender) ----------
+
+const LEG_SPORTS = ['Ride', 'VirtualRide', 'Run', 'TrailRun', 'Hike', 'Padel', 'Tennis', 'Soccer'];
+
+export const SPORT_CHOICES = [
+  { type: 'Swim', label: '🏊 Zwemmen' },
+  { type: 'Ride', label: '🚴 Fietsen' },
+  { type: 'Padel', label: '🎾 Padel' },
+  { type: 'Run', label: '🏃 Hardlopen' },
+  { type: 'Walk', label: '🚶 Wandelen' },
+  { type: 'Workout', label: '⭐ Anders' },
+];
+
+/** Geplande sporten op een dag: zelf ingepland + intervals.icu-kalender. */
+export function plannedOn(iso) {
+  const manual = (get().plannedSports || {})[iso] || [];
+  const fromIcu = icu.plannedEventsOn(get().icuCache, iso);
+  return [...manual, ...fromIcu];
+}
+
+function plannedSummary(iso) {
+  const p = plannedOn(iso);
+  return {
+    any: p.length > 0,
+    hard: p.some(x => x.hard),
+    legHard: p.some(x => x.hard && LEG_SPORTS.includes(x.type)),
+    list: p,
+  };
+}
+
 // ---------- Wachtrij-planner ----------
 // Geen vaste weekdagen meer: A→B→C-cyclus op basis van wat er echt gedaan is.
 // Gemiste sessies schuiven vanzelf op; doel = 3 zware sessies per week, liefst om de dag.
@@ -166,14 +196,23 @@ export function schedule(targetIso, fromIso = todayISO()) {
       const gap = lastHeavyDate ? daysBetween(lastHeavyDate, cursor) : 99;
       const candidate = nextInCycle(lastHeavyId);
       const recMap = muscleRecoveryMap(cursor, sim);
-      const eligible = sessionMusclesReady(SESSIONS[candidate], cursor, recMap);
+      const planToday = plannedSummary(cursor);
+      const planTomorrow = plannedSummary(addDays(cursor, 1));
+      const hasQuads = SESSIONS[candidate].focus.includes('quadriceps');
+      let eligible = sessionMusclesReady(SESSIONS[candidate], cursor, recMap);
+      // beenwerk niet op/rond een stevige benen-sportdag
+      if (hasQuads && (planToday.legHard || planTomorrow.legHard)) eligible = false;
       const mustCatchUp = need >= remaining; // anders haal je de 3 niet meer
-      if (need > 0 && eligible && (gap >= 2 || mustCatchUp)) {
+      if (need > 0 && eligible && !planToday.hard && (gap >= 2 || mustCatchUp)) {
         pick = candidate;
         reason = mustCatchUp && gap < 2 ? 'inhaalsessie (weekdoel)' : (gap >= 7 ? 'opgeschoven sessie' : '');
+      } else if (planToday.hard) {
+        pick = 'snackMobility';
+        const nm = planToday.list.map(p => icu.TYPE_NL[p.type] || p.type).join(', ').toLowerCase();
+        reason = `${nm} gepland — kracht schuift op`;
       } else if (need > 0 && !eligible) {
         pick = lastSnackId === 'snackCore' ? 'snackPump' : 'snackCore';
-        reason = 'spieren nog niet hersteld — zware sessie schuift op';
+        reason = (hasQuads && planTomorrow.legHard) ? 'morgen zware benen-sport — beenwerk schuift op' : 'spieren nog niet hersteld — zware sessie schuift op';
       } else if (dow === 6) {
         pick = 'rest';
       } else {
@@ -272,6 +311,18 @@ export function advise(iso, cache) {
   if (hrv && hrv.today != null && hrv.avg != null && hrv.today <= hrv.avg * 0.8) {
     reasons.push(`HRV ${Math.round(hrv.today)} flink onder je gemiddelde (${Math.round(hrv.avg)}).`);
     bump('lighter');
+  }
+
+  // 4b. Vandaag/morgen andere sport gepland
+  const planToday = plannedSummary(iso);
+  const planTomorrow = plannedSummary(addDays(iso, 1));
+  if (planToday.any) {
+    const nm = planToday.list.map(p => icu.TYPE_NL[p.type] || p.type).join(', ').toLowerCase();
+    if (planToday.hard) reasons.push(`Vandaag staat ${nm} (stevig) gepland — de planner heeft je krachtsessie daaromheen gezet.`);
+    else reasons.push(`Vandaag ook ${nm} gepland (licht) — prima te combineren, houd gewoon wat over.`);
+  }
+  if (planTomorrow.legHard && base.type === 'heavy' && base.focus.includes('quadriceps')) {
+    reasons.push('Morgen zware benen-sport gepland — doe het beenwerk vandaag rustig aan.');
   }
 
   // 5. Zware activiteit gisteren / vandaag

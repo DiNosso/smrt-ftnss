@@ -144,11 +144,19 @@ input, select, textarea {
   -webkit-appearance: none;
 }
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--secondary); box-shadow: 0 0 0 3px rgba(25, 135, 117, .25); }
-/* checkboxes moeten hun native vinkje houden (appearance:none hierboven sloopte ze) */
+/* checkboxes: volledig custom getekend — onafhankelijk van iOS native rendering */
 input[type=checkbox] {
-  appearance: auto; -webkit-appearance: checkbox;
-  width: 22px; height: 22px; padding: 0;
-  accent-color: var(--accent);
+  appearance: none; -webkit-appearance: none;
+  width: 26px; height: 26px; padding: 0; margin: 0;
+  flex: none;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface-2);
+  transition: background .12s ease, border-color .12s ease;
+}
+input[type=checkbox]:checked {
+  border-color: var(--accent);
+  background: var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2304110e' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / 16px 16px no-repeat;
 }
 label {
   display: block; font-size: .72rem; font-weight: 600;
@@ -233,10 +241,7 @@ nav.tabbar button.active { color: var(--accent); }
 .slotlist .scheme { color: var(--accent); font-weight: 650; white-space: nowrap; font-variant-numeric: tabular-nums; font-size: .85rem; }
 
 .habit { display: flex; align-items: flex-start; gap: 12px; padding: 9px 0; }
-.habit input[type=checkbox] {
-  width: 22px; height: 22px; accent-color: var(--accent); flex: none; margin-top: 1px;
-  border-radius: 6px;
-}
+.habit input[type=checkbox] { margin-top: 1px; }
 .habit > div > div:first-child, .habit > span { font-weight: 550; font-size: .92rem; }
 
 .statgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }

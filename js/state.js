@@ -1,6 +1,8 @@
 // Eenvoudige localStorage-state. Alles lokaal, niets verlaat je toestel
 // behalve directe calls naar intervals.icu en YouTube.
 
+export const VERSION = '2.4.0';
+
 const KEY = 'fait.v1';
 
 const DEFAULTS = {
@@ -21,6 +23,7 @@ const DEFAULTS = {
   },
   weights: {},                 // {'YYYY-MM-DD': kg} handmatige wegingen
   checkins: {},                // {'YYYY-MM-DD': {motivation: 1-5, sleepScore: 1-5, soreness: {muscle: 0|1|2}}}
+  plannedSports: {},           // {'YYYY-MM-DD': [{type: 'Swim'|'Ride'|..., hard: bool}]} zelf ingepland
   measurements: {},            // {'YYYY-MM-DD': {waist: cm}} maandcheck-metingen
   customExercises: [],         // eigen oefeningen
   sessionOverrides: {},        // {sessionId: {slots: [...], ...}} bewerkte sessies

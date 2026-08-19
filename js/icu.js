@@ -33,13 +33,15 @@ export async function refresh(force = false) {
   const today = todayISO();
   const oldest42 = addDays(today, -42);
   const oldest10 = addDays(today, -10);
+  const next10 = addDays(today, 10);
 
-  const [wellness, activities] = await Promise.all([
+  const [wellness, activities, events] = await Promise.all([
     apiGet(`/athlete/${athlete}/wellness?oldest=${oldest42}&newest=${today}`),
     apiGet(`/athlete/${athlete}/activities?oldest=${oldest10}&newest=${today}`),
+    apiGet(`/athlete/${athlete}/events?oldest=${today}&newest=${next10}`).catch(() => []),
   ]);
 
-  const cacheObj = { fetchedAt: Date.now(), wellness, activities };
+  const cacheObj = { fetchedAt: Date.now(), wellness, activities, events };
   update(s => { s.icuCache = cacheObj; });
   return cacheObj;
 }
@@ -192,3 +194,20 @@ export const TYPE_NL = {
   Padel: 'Padel', Tennis: 'Tennis', WeightTraining: 'Krachttraining', Walk: 'Wandelen',
   Workout: 'Workout', Yoga: 'Yoga', Hike: 'Hiken',
 };
+
+/** Geplande kalender-events (intervals.icu) op een dag — genegeerd: notities en eigen krachtsessies. */
+export function plannedEventsOn(cache, iso) {
+  const evs = cache?.events;
+  if (!Array.isArray(evs)) return [];
+  return evs.filter(e =>
+    (e.start_date_local || '').slice(0, 10) === iso &&
+    (e.category === 'WORKOUT' || e.category === 'RACE' || e.type) &&
+    e.category !== 'NOTE' &&
+    e.type && e.type !== 'WeightTraining'
+  ).map(e => ({
+    type: e.type,
+    name: e.name || TYPE_NL[e.type] || e.type,
+    hard: (e.icu_training_load || 0) >= 70 || (e.moving_time || 0) >= 5400 || e.category === 'RACE',
+    source: 'icu',
+  }));
+}

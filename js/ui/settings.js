@@ -1,7 +1,7 @@
 // Instellingen: intervals.icu, materiaal, programma, data
 
 import { el, toast } from './common.js';
-import { get, S, update, exportData, importData, todayISO } from '../state.js';
+import { get, S, update, exportData, importData, todayISO, VERSION } from '../state.js';
 import { EQUIPMENT_NL } from '../data/exercises.js';
 import * as icu from '../icu.js';
 import { openEditor } from './editor.js';
@@ -109,7 +109,7 @@ export function renderSettings(app, ctx) {
         if (confirm('Alle logs en instellingen wissen?')) { localStorage.clear(); location.reload(); }
       } }, 'Alles wissen'))));
 
-  app.append(el('p', { class: 'center tiny dim' }, 'SMRT.FTNSS · persoonlijke trainingsapp · gebouwd op je eigen trainingsrapport'));
+  app.append(el('p', { class: 'center tiny dim' }, `SMRT.FTNSS v${VERSION} · persoonlijke trainingsapp · gebouwd op je eigen trainingsrapport`));
 }
 
 function backupHint() {

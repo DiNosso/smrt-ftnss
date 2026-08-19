@@ -2,7 +2,7 @@
 
 import { el, DAY_NL, sheet, toast, fmtDate } from './common.js';
 import { get, update, todayISO, addDays } from '../state.js';
-import { schedule, mondayOf, mesoInfo } from '../engine.js';
+import { schedule, mondayOf, mesoInfo, plannedOn, SPORT_CHOICES } from '../engine.js';
 import { SESSIONS } from '../data/program.js';
 import * as icu from '../icu.js';
 
@@ -54,12 +54,17 @@ export function renderWeek(app, ctx) {
         if (logs.length) badge = '✅';
       }
       const actLine = acts.length ? acts.map(a => icu.TYPE_NL[a.type] || a.type).join(', ') : null;
+      const planned = iso >= today ? plannedOn(iso) : [];
+      const planLine = planned.length
+        ? planned.map(p => `${icu.TYPE_NL[p.type] || p.type}${p.hard ? ' (stevig)' : ''}`).join(', ')
+        : null;
 
       const rowEl = el('div', { class: 'weekday' + (isToday ? ' today' : ''), style: iso >= today ? 'cursor:pointer' : '' },
         el('div', { class: 'd' }, el('div', { class: 'nm' }, DAY_NL[i]), el('div', { class: 'no' }, d.getDate())),
         el('div', { class: 'what' },
           el('div', { class: 't' }, title),
           el('div', { class: 'tiny dim' }, sub, actLine ? `${sub ? ' · ' : ''}🏃 ${actLine}` : ''),
+          planLine ? el('div', { class: 'tiny', style: 'color:var(--warn)' }, `📅 ${planLine}`) : null,
           logs.length ? el('div', { class: 'tiny', style: 'color:var(--accent)' }, logs.map(l => `${l.sets.filter(s => s.done).length} sets gelogd`).join(' · ')) : null),
         el('div', { class: 'badge' }, badge, iso >= today ? el('span', { class: 'dim', style: 'margin-left:6px' }, '›') : ''));
       if (iso >= today) rowEl.addEventListener('click', () => openDayPicker(iso, () => draw(offsetWeeks)));
@@ -78,20 +83,60 @@ export function renderWeek(app, ctx) {
   if (icu.isConfigured()) icu.refresh().then(() => draw(0)).catch(() => {});
 }
 
-/** Dag aanpassen: kan niet (rustdag), specifieke sessie, of terug naar automatisch. */
+/** Dag aanpassen: andere sport plannen, kan niet (rustdag), specifieke sessie, of automatisch. */
 function openDayPicker(iso, redraw) {
   const swap = get().swaps[iso];
   const box = el('div', {},
     el('h3', {}, fmtDate(iso)),
-    el('p', { class: 'tiny dim' }, 'Pas deze dag aan. Sla je een zware sessie over, dan schuift de wachtrij vanzelf op — je mist niets, het duurt alleen een dagje langer.'));
+    el('p', { class: 'tiny dim' }, 'Plan een andere sport of pas de krachtsessie aan. De wachtrij plant er automatisch omheen — een gemiste sessie schuift gewoon op.'));
+  const close = sheet(box);
+  const done = (msg) => { close(); toast(msg); redraw(); };
+
+  // --- andere sport plannen ---
+  box.append(el('h5', { class: 'mt' }, 'Andere sport plannen'));
+  const manual = (get().plannedSports || {})[iso] || [];
+  const fromIcu = icu.plannedEventsOn(get().icuCache, iso);
+  for (const [idx, p] of manual.entries()) {
+    box.append(el('div', { class: 'spread', style: 'padding:6px 0' },
+      el('span', {}, `${icu.TYPE_NL[p.type] || p.type} ${p.hard ? '· stevig' : '· licht'}`),
+      el('button', { class: 'btn-sm btn-ghost', style: 'color:var(--danger)', onclick: () => {
+        update(st => { st.plannedSports[iso].splice(idx, 1); if (!st.plannedSports[iso].length) delete st.plannedSports[iso]; });
+        done('Sport verwijderd');
+      } }, '✕')));
+  }
+  for (const p of fromIcu) {
+    box.append(el('div', { class: 'tiny dim', style: 'padding:4px 0' }, `📅 ${p.name} (uit intervals.icu-kalender)`));
+  }
+  let pickedSport = null;
+  const sportRow = el('div', { class: 'row wrap' }, SPORT_CHOICES.map(c =>
+    el('button', { class: 'btn-sm', onclick: (e) => {
+      pickedSport = c.type;
+      sportRow.querySelectorAll('button').forEach(b => b.classList.remove('btn-secondary'));
+      e.currentTarget.classList.add('btn-secondary');
+      intensityRow.style.display = 'flex';
+    } }, c.label)));
+  const addSport = (hard) => {
+    if (!pickedSport) return;
+    update(st => {
+      st.plannedSports[iso] = st.plannedSports[iso] || [];
+      st.plannedSports[iso].push({ type: pickedSport, hard });
+    });
+    done('Sport ingepland — schema aangepast');
+  };
+  const intensityRow = el('div', { class: 'row mt', style: 'display:none' },
+    el('button', { class: 'btn-sm grow', onclick: () => addSport(false) }, 'Licht / rustig'),
+    el('button', { class: 'btn-sm grow', onclick: () => addSport(true) }, 'Stevig / lang'));
+  box.append(sportRow, intensityRow);
+
+  // --- krachtsessie aanpassen ---
+  box.append(el('h5', { class: 'mt' }, 'Krachtsessie'));
   const set = (id) => {
     update(st => { if (id) st.swaps[iso] = id; else delete st.swaps[iso]; });
-    close(); toast(id ? 'Dag aangepast' : 'Terug naar automatische planning'); redraw();
+    done(id ? 'Dag aangepast' : 'Terug naar automatische planning');
   };
   box.append(el('button', { class: 'btn-block mt', style: 'border-color:rgba(224,122,122,.4)', onclick: () => set('rest') }, '🚫 Kan niet / rustdag'));
   for (const s of Object.values(SESSIONS).filter(s => s.id !== 'rest')) {
     box.append(el('button', { class: 'btn-block mt' + (swap === s.id ? ' btn-secondary' : ''), onclick: () => set(s.id) }, s.name));
   }
   if (swap) box.append(el('button', { class: 'btn-block mt btn-ghost', style: 'color:var(--accent)', onclick: () => set(null) }, '↺ Automatische planning'));
-  const close = sheet(box);
 }
