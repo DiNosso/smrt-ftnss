@@ -1,8 +1,8 @@
 // Progressie: weekvolume vs doelen, fitness/vorm-grafiek, per-oefening progressie
 
-import { el, fmtDate, sheet, toast } from './common.js';
+import { el, fmtDate, sheet, toast, cardHead, explain, bodyMap, statRow, ICO } from './common.js';
 import { get, S, update, todayISO } from '../state.js';
-import { weeklyVolume, VOLUME_TARGETS, weightTrend, detectPlateaus, rebuildLastWeights, exerciseHistory, exercisePRs, e1rm, volumeHistory } from '../engine.js';
+import { weeklyVolume, VOLUME_TARGETS, weightTrend, detectPlateaus, rebuildLastWeights, exerciseHistory, exercisePRs, e1rm, volumeHistory, effortQuality, muscleStatus } from '../engine.js';
 import { MUSCLE_NL, byId } from '../data/exercises.js';
 import { SESSIONS } from '../data/program.js';
 import * as icu from '../icu.js';
@@ -13,6 +13,40 @@ const C_ATL = '#cb7c36'; // Vermoeidheid (ATL)
 
 export function renderProgress(app, ctx) {
   app.append(el('div', { class: 'hero' }, el('h2', { class: 'mb0' }, 'Progressie')));
+
+  // --- Inspanningskwaliteit (RIR) ---
+  const eq = effortQuality(14);
+  if (eq) {
+    app.append(el('div', { class: 'card' },
+      cardHead(ICO.bolt, 'Inspanning (14 dagen)',
+        el('span', { class: 'pill ' + (eq.pctEffective >= 70 ? 'good' : 'warn') }, `${eq.pctEffective}% effectief`)),
+      statRow([
+        { n: eq.total, l: 'sets met RIR' },
+        { n: eq.pctEffective + '%', l: 'in de zone', accent: eq.pctEffective >= 70 },
+        { n: eq.pctFailure + '%', l: 'tegen falen' },
+      ]),
+      el('p', { class: 'tiny mt mb0', style: eq.pctEffective >= 70 ? 'color:var(--primary)' : 'color:var(--warn)' }, eq.advice),
+      explain('Waarom dit telt', el('p', { class: 'mb0' },
+        'Je rapport noemt sets met 5+ reps in reserve "junk volume": ze kosten tijd en herstel, maar geven te weinig prikkel om te groeien. Sets met RIR 0-3 zitten in de effectieve zone; de laatste set van elke oefening mag richting RIR 0-1. Hoe eerlijker je je RIR logt, hoe beter de app je volgende gewicht kiest.'))));
+  }
+
+  // --- Spierkaart ---
+  const volNow = weeklyVolume(todayISO());
+  const lv = {};
+  for (const [m, [lo, hi]] of Object.entries(VOLUME_TARGETS)) {
+    const v = volNow[m] || 0;
+    lv[m] = v === 0 ? 0 : v < lo ? 1 : v <= hi ? 2 : 3;
+  }
+  if (get().logs.length) {
+    app.append(el('div', { class: 'card' },
+      cardHead(ICO.body, 'Spiergroepen deze week'),
+      bodyMap(lv, { height: 168 }),
+      el('div', { class: 'bodylegend' },
+        el('span', {}, el('i', { style: 'background:rgba(255,255,255,.05)' }), 'niet'),
+        el('span', {}, el('i', { style: 'background:rgba(25,135,117,.45)' }), 'onder doel'),
+        el('span', {}, el('i', { style: 'background:rgba(56,237,208,.55)' }), 'op doel'),
+        el('span', {}, el('i', { style: 'background:rgba(56,237,208,.95)' }), 'boven doel'))));
+  }
 
   // --- Weekvolume per spiergroep ---
   const vol = weeklyVolume(todayISO());
@@ -27,7 +61,7 @@ export function renderProgress(app, ctx) {
       el('div', { class: 'track' }, el('div', { class: `fill ${cls}`, style: `width:${pct}%` })),
       el('span', { class: 'val' }, `${v} / ${lo}-${hi}`)));
   }
-  volCard.append(el('p', { class: 'tiny dim mt mb0' }, 'Doelen uit je rapport: borst 12-16, armen 8-12 werksets per week. Groen = in de sweet spot, geel = boven de MRV-grens.'));
+  volCard.append(explain('Over deze doelen', el('p', { class: 'mb0' }, 'Doelen uit je rapport: borst 12-16, armen 8-12 werksets per week. Groen = in de sweet spot, geel = boven de MRV-grens (meer is dan niet beter).')));
   app.append(volCard);
 
   // --- Volume-historie (8 weken, per spiergroep) ---
@@ -87,7 +121,7 @@ export function renderProgress(app, ctx) {
     card.append(el('div', { class: 'row mt tiny' },
       el('span', {}, el('span', { style: `color:${C_CTL}` }, '━'), ' Fitness (CTL)'),
       el('span', {}, el('span', { style: `color:${C_ATL}` }, '━'), ' Vermoeidheid (ATL)')));
-    card.append(el('p', { class: 'tiny dim mt mb0' }, 'Vorm = fitness − vermoeidheid. Onder −12 plant de app automatisch lichter; onder −25 krijg je rust voorgeschreven.'));
+    card.append(explain('Wat betekent vorm?', el('p', { class: 'mb0' }, 'Vorm = fitness (CTL) − vermoeidheid (ATL), rechtstreeks uit intervals.icu. Onder −12 plant de app automatisch lichter, onder −25 schrijft hij rust voor, en bij vijf dagen gemiddeld onder −15 komt je deloadweek naar voren.')));
     icuBox.append(card);
   };
   drawIcu(get().icuCache);

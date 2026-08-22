@@ -1,11 +1,11 @@
 // Service worker: offline-first voor app-bestanden, netwerk voor API's
-const CACHE = 'fait-v10';
+const CACHE = 'fait-v11';
 const ASSETS = [
   './', 'index.html', 'css/style.css', 'manifest.webmanifest',
   'js/app.js', 'js/state.js', 'js/icu.js', 'js/engine.js',
   'js/data/exercises.js', 'js/data/program.js',
   'js/ui/common.js', 'js/ui/today.js', 'js/ui/workout.js', 'js/ui/week.js',
-  'js/ui/library.js', 'js/ui/progress.js', 'js/ui/settings.js', 'js/ui/editor.js',
+  'js/ui/library.js', 'js/ui/progress.js', 'js/ui/settings.js', 'js/ui/editor.js', 'js/ui/cast.js',
   'assets/fonts/bbh-hegarty-400.woff2',
   'assets/icons/icon-180.png', 'assets/icons/icon-192.png', 'assets/icons/icon-512.png',
 ];

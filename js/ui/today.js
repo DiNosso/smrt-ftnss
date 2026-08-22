@@ -1,9 +1,12 @@
-// Vandaag: advies, sessie van vandaag, dagelijkse gewoontes
+// Vandaag: hero + readiness-ring, weekstrip, advies, sessie, spierkaart, gewoontes
 
-import { el, fmtDate, toast, sheet } from './common.js';
-import { get, S, update, todayISO } from '../state.js';
+import { el, fmtDate, toast, sheet, DAY_NL, ring, statRow, cardHead, explain, weekStrip, bodyMap, ICO } from './common.js';
+import { get, S, update, todayISO, addDays } from '../state.js';
 import * as icu from '../icu.js';
-import { advise, buildWorkout, mesoInfo, muscleStatus, proteinTarget, weekStreak, adhocSession } from '../engine.js';
+import {
+  advise, buildWorkout, mesoInfo, muscleStatus, proteinTarget, weekStreak, adhocSession,
+  mondayOf, minutesOn, heavyTargetForWeek, weeklyVolume, VOLUME_TARGETS, plannedOn,
+} from '../engine.js';
 import { DAILY_HABITS, SESSIONS } from '../data/program.js';
 import { MUSCLE_NL, EXERCISES } from '../data/exercises.js';
 import { openWorkout } from './workout.js';
@@ -11,73 +14,118 @@ import { openWorkout } from './workout.js';
 export async function renderToday(app, ctx) {
   const iso = todayISO();
   const meso = mesoInfo(iso);
+  const logs = get().logs;
 
-  app.append(el('div', { class: 'hero' },
-    el('div', { class: 'date' }, fmtDate(iso)),
-    el('h1', {}, 'SMRT.FTNSS'),
-    el('div', { class: 'mt' },
-      el('span', { class: 'pill' }, `Week ${meso.week}`),
-      el('span', { class: 'pill' + (meso.isDeload ? ' warn' : '') }, meso.isDeload ? 'Deload' : `Blokweek ${meso.pos + 1}/4`),
-      weekStreak() >= 1 ? el('span', { class: 'pill good' }, `🔥 ${weekStreak()} ${weekStreak() === 1 ? 'week' : 'weken'} streak`) : null,
-    )));
+  // ---------- Hero: groet + readiness-ring ----------
+  const hour = new Date().getHours();
+  const greet = hour < 6 ? 'Goedenacht' : hour < 12 ? 'Goedemorgen' : hour < 18 ? 'Goedemiddag' : 'Goedenavond';
+  const heroRing = el('div');
+  app.append(el('div', { class: 'herowrap' },
+    el('div', { class: 'heroinfo' },
+      el('div', { class: 'date', style: 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis' }, `${greet} · ${fmtDate(iso).replace(/ \d{4}$/, '')}`),
+      el('h1', {}, 'SMRT.FTNSS'),
+      el('div', {},
+        el('span', { class: 'pill' }, `Week ${meso.week}`),
+        el('span', { class: 'pill' + (meso.isDeload ? ' warn' : '') }, meso.isDeload ? 'Deload' : `Blok ${meso.pos + 1}/4`),
+        weekStreak() >= 1 ? el('span', { class: 'pill good' }, `🔥 ${weekStreak()}`) : null)),
+    heroRing));
 
-  // Dagelijkse check-in (15 sec) — voedt advies en planner
+  // ---------- Weekstrip + statrij ----------
+  const mon = mondayOf(iso);
+  const heavyDone = [];
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = addDays(mon, i);
+    const dayLogs = logs.filter(l => l.date === d);
+    const sets = dayLogs.reduce((t, l) => t + l.sets.filter(s => s.done).length, 0);
+    const isHeavy = dayLogs.some(l => SESSIONS[l.sessionId]?.type === 'heavy');
+    if (isHeavy) heavyDone.push(d);
+    const mins = minutesOn(d);
+    return {
+      label: DAY_NL[i],
+      pct: sets ? Math.min(100, 25 + sets * 5) : (mins >= 40 ? 22 : mins > 0 ? 12 : 6),
+      state: sets ? 'done' : (d >= iso && mins > 0 ? 'planned' : ''),
+      today: d === iso,
+    };
+  });
+
+  const weekSets = logs.filter(l => l.date >= mon).reduce((t, l) => t + l.sets.filter(s => s.done).length, 0);
+  const weekVol = Math.round(logs.filter(l => l.date >= mon)
+    .reduce((t, l) => t + l.sets.reduce((x, s) => x + (s.done ? (s.weight || 0) * (s.reps || 0) : 0), 0), 0));
+  const target = heavyTargetForWeek(iso);
+
+  app.append(el('div', { class: 'card' },
+    weekStrip(days),
+    statRow([
+      { n: `${heavyDone.length}/${target}`, l: 'sessies', accent: heavyDone.length >= target },
+      { n: weekSets, l: 'sets' },
+      { n: weekVol >= 1000 ? (weekVol / 1000).toFixed(1) + 'k' : weekVol, l: 'kg volume' },
+    ])));
+
+  // ---------- Check-in ----------
   app.append(checkinCard(iso, ctx));
 
-  // Advieskaart (asynchroon: eerst zonder icu, dan verversen)
+  // ---------- Advies + sessie ----------
   const adviceBox = el('div');
-  app.append(adviceBox);
   const sessionBox = el('div');
-  app.append(sessionBox);
+  app.append(adviceBox, sessionBox);
 
   const draw = (cache, icuError) => {
     adviceBox.innerHTML = '';
     sessionBox.innerHTML = '';
     const adv = advise(iso, cache);
+    const mins = minutesOn(iso);
 
-    // Advies
+    // readiness-score voor de ring (100 = fris)
+    const score = { go: 100, lighter: 66, easy: 40, rest: 20 }[adv.level];
+    heroRing.innerHTML = '';
+    heroRing.append(ring(score, { go: 'Top', lighter: 'Oké', easy: 'Laag', rest: 'Rust' }[adv.level], 'readiness'));
+
     const levelPill = {
       go: el('span', { class: 'pill good' }, 'Klaar om te trainen'),
-      lighter: el('span', { class: 'pill warn' }, 'Iets lichter vandaag'),
+      lighter: el('span', { class: 'pill warn' }, 'Iets lichter'),
       easy: el('span', { class: 'pill danger' }, 'Rustig aan'),
       rest: el('span', { class: 'pill danger' }, 'Herstel eerst'),
     }[adv.level];
 
     const tired = get().tired[iso];
+    const [head, ...rest] = adv.reasons;
     adviceBox.append(el('div', { class: 'card' },
       el('div', { class: `advice ${adv.level}` },
         el('div', { class: 'spread' }, el('h4', { class: 'mb0' }, 'Advies van vandaag'), levelPill),
-        el('div', { class: 'mt tiny dim' }, adv.reasons.map(r => el('p', { class: 'mb0', style: 'margin-bottom:4px' }, '· ' + r))),
-        adv.form != null ? el('div', { class: 'mt tiny dim' }, `intervals.icu vorm: ${adv.form > 0 ? '+' + adv.form : adv.form} (CTL−ATL)`) : null,
+        el('p', { class: 'mt mb0', style: 'font-size:.92rem' }, head || ''),
+        rest.length ? explain(`Waarom (${rest.length})`, rest.map(r => el('p', { class: 'mb0', style: 'margin-bottom:6px' }, '· ' + r))) : null,
         icuError ? el('div', { class: 'mt tiny', style: 'color:var(--warn)' }, `⚠ intervals.icu: ${icuError}`) : null,
-        !icu.isConfigured() ? el('div', { class: 'mt tiny dim' }, 'Tip: koppel intervals.icu in Instellingen, dan telt je padel/fiets-belasting automatisch mee.') : null,
-      ),
+        !icu.isConfigured() ? el('div', { class: 'mt tiny dim' }, 'Tip: koppel intervals.icu in Instellingen, dan telt je padel/fiets-belasting automatisch mee.') : null),
       el('div', { class: 'row mt' },
         el('button', { class: 'btn-sm' + (tired === 'moe' ? ' btn-secondary' : ''), onclick: () => { update(s => { s.tired[iso] = tired === 'moe' ? undefined : 'moe'; }); ctx.render(); } }, '😮‍💨 Beetje moe'),
-        el('button', { class: 'btn-sm' + (tired === 'kapot' ? ' btn-secondary' : ''), onclick: () => { update(s => { s.tired[iso] = tired === 'kapot' ? undefined : 'kapot'; }); ctx.render(); } }, '🥱 Kapot'),
-      )));
+        el('button', { class: 'btn-sm' + (tired === 'kapot' ? ' btn-secondary' : ''), onclick: () => { update(s => { s.tired[iso] = tired === 'kapot' ? undefined : 'kapot'; }); ctx.render(); } }, '🥱 Kapot'))));
 
-    // Sessie van vandaag
-    const done = get().logs.some(l => l.date === iso && l.sessionId === adv.session.id);
-    const slots = buildWorkout(adv.session, adv.adjust);
+    // sessie van vandaag
+    const done = logs.some(l => l.date === iso && l.sessionId === adv.session.id);
+    const cap = adv.session.type === 'heavy' && mins ? mins : null;
+    const slots = buildWorkout(adv.session, adv.adjust, cap);
     const focus = adv.session.focus.map(m => MUSCLE_NL[m] || m).join(' · ');
 
-    sessionBox.append(el('div', { class: 'card accent' },
+    sessionBox.append(el('div', { class: 'card cta' },
       el('div', { class: 'spread' },
-        el('h3', { class: 'mb0' }, adv.session.name),
-        adv.session.durationMin ? el('span', { class: 'pill' }, `± ${adv.session.durationMin} min`) : null),
+        el('div', {},
+          el('div', { class: 'tiny', style: 'color:var(--accent);font-weight:700;letter-spacing:.09em;text-transform:uppercase' },
+            adv.session.type === 'heavy' ? 'Krachtsessie' : adv.session.type === 'snack' ? 'Korte sessie' : 'Rust'),
+          el('h3', { class: 'mb0', style: 'margin-top:4px' }, adv.session.name.replace(/^.*·\s*/, ''))),
+        adv.session.durationMin ? el('span', { class: 'pill' }, `${cap ? Math.min(cap, adv.session.durationMin) : adv.session.durationMin} min`) : null),
       focus ? el('div', { class: 'tiny dim mt' }, focus) : null,
-      el('p', { class: 'mt tiny dim' }, adv.session.description),
+      slots.trimmedNote ? el('div', { class: 'tiny mt', style: 'color:var(--warn)' }, '⏱ ' + slots.trimmedNote) : null,
       slots.length ? el('ul', { class: 'slotlist mt' },
         slots.map(s => el('li', {},
           el('span', { class: 'grow' }, s.exercise?.nameNL || s.ex),
           el('span', { class: 'scheme' }, `${s.sets}×${s.reps[0]}-${s.reps[1]}`)))) : null,
-      adv.session.id !== adv.base.id ? el('p', { class: 'mt tiny dim' }, `(Gepland stond: ${adv.base.name} — die schuift door.)`) : null,
       slots.length ? el('button', {
-        class: 'btn-primary btn-block mt', onclick: () => openWorkout(adv.session, adv.adjust, ctx)
+        class: 'btn-primary btn-block mt', onclick: () => openWorkout(adv.session, adv.adjust, ctx, cap)
       }, done ? '✓ Al gedaan — nog een keer?' : '▶ Start workout') : null,
       done ? el('div', { class: 'center tiny mt', style: 'color:var(--accent)' }, 'Vandaag al gelogd. Lekker bezig! 💪') : null,
-    ));
+      explain('Over deze sessie',
+        el('p', { class: 'mb0' }, adv.session.description),
+        adv.session.id !== adv.base.id ? el('p', { class: 'mt mb0' }, `Gepland stond: ${adv.base.name} — die schuift automatisch door.`) : null)));
   };
 
   draw(get().icuCache);
@@ -85,65 +133,69 @@ export async function renderToday(app, ctx) {
     icu.refresh().then(cache => draw(cache)).catch(e => draw(get().icuCache, e.message));
   }
 
-  // Spierherstel
+  // ---------- Spierkaart ----------
+  const vol = weeklyVolume(iso);
   const ms = muscleStatus(iso);
-  if (get().logs.length) {
-    app.append(el('div', { class: 'card' },
-      el('h5', {}, 'Spierherstel'),
-      el('div', { class: 'row wrap' },
-        ms.map(m => el('span', { class: 'pill ' + (m.ready ? 'good' : 'warn') },
-          `${MUSCLE_NL[m.muscle] || m.muscle}${m.ready ? ' ✓' : ` ${m.hoursLeft}u`}`)))));
+  const notReady = ms.filter(m => !m.ready);
+  const levels = {};
+  for (const [m, [lo, hi]] of Object.entries(VOLUME_TARGETS)) {
+    const v = vol[m] || 0;
+    levels[m] = v === 0 ? 0 : v < lo ? 1 : v <= hi ? 2 : 3;
   }
+  const bodyCard = el('div', { class: 'card' + (logs.length ? '' : ' ') },
+    cardHead(ICO.body, 'Deze week getraind',
+      notReady.length ? el('span', { class: 'pill warn' }, `${notReady.length} in herstel`) : el('span', { class: 'pill good' }, 'Alles hersteld')),
+    el('div', { class: logs.length ? '' : 'ghost' }, bodyMap(levels)),
+    el('div', { class: 'bodylegend' },
+      el('span', {}, el('i', { style: 'background:rgba(255,255,255,.05)' }), 'niet'),
+      el('span', {}, el('i', { style: 'background:rgba(25,135,117,.45)' }), 'weinig'),
+      el('span', {}, el('i', { style: 'background:rgba(56,237,208,.55)' }), 'op doel'),
+      el('span', {}, el('i', { style: 'background:rgba(56,237,208,.95)' }), 'veel')),
+    !logs.length ? el('div', { class: 'emptyhint mt' }, 'Na je eerste sessie kleurt je lichaam hier in.') : null,
+    notReady.length ? explain('Spierherstel',
+      el('div', { class: 'row wrap' }, ms.map(m => el('span', { class: 'pill ' + (m.ready ? 'good' : 'warn') },
+        `${MUSCLE_NL[m.muscle] || m.muscle}${m.ready ? ' ✓' : ` ${m.hoursLeft}u`}`)))) : null);
+  app.append(bodyCard);
 
-  // Maandcheck (elke ~30 dagen)
+  // ---------- Maandcheck ----------
   const lastCheck = S().lastMonthCheck;
   const daysSinceCheck = lastCheck ? Math.round((new Date(iso) - new Date(lastCheck)) / 86400000) : 999;
-  if (daysSinceCheck >= 30 && get().logs.length >= 4) {
+  if (daysSinceCheck >= 30 && logs.length >= 4) {
     const waistIn = el('input', { type: 'number', step: '0.5', inputmode: 'decimal', placeholder: 'taille (cm)', style: 'width:130px' });
-    app.append(el('div', { class: 'card', style: 'border-color:var(--warn)' },
-      el('h5', {}, '📸 Maandcheck'),
-      el('p', { class: 'tiny dim' }, 'Tijd voor je maandelijkse voortgangscheck: voortgangsfoto (zelfde licht/hoek), taille meten op de navel, en weeg je een paar ochtenden achter elkaar. De weegschaal alleen liegt — foto + taille vertellen het echte recomp-verhaal.'),
+    app.append(el('div', { class: 'card', style: 'border-color:rgba(224,195,122,.35)' },
+      cardHead(ICO.scale, 'Maandcheck'),
+      el('p', { class: 'tiny dim' }, 'Voortgangsfoto (zelfde licht/hoek), taille op de navel, en een paar ochtenden wegen. De weegschaal alleen liegt.'),
       el('div', { class: 'row' }, waistIn,
         el('button', { class: 'btn-sm btn-secondary', onclick: () => {
           const waist = parseFloat(waistIn.value);
           update(s => {
             s.settings.lastMonthCheck = iso;
-            if (waist && waist > 40 && waist < 200) { s.measurements[iso] = { ...(s.measurements[iso] || {}), waist }; }
+            if (waist && waist > 40 && waist < 200) s.measurements[iso] = { ...(s.measurements[iso] || {}), waist };
           });
           toast('Maandcheck opgeslagen'); ctx.render();
         } }, '✓ Gedaan'))));
   }
 
-  // Vrije workout
+  // ---------- Snel iets anders ----------
   app.append(el('div', { class: 'card' },
-    el('div', { class: 'spread' },
-      el('div', {},
-        el('h5', { class: 'mb0' }, 'Vrije workout'),
-        el('div', { class: 'tiny dim' }, 'Spontaan naar het rek, of gewoon iets anders? Kies zelf je oefeningen — telt gewoon mee.')),
-      el('button', { class: 'btn-sm', onclick: () => openAdhocPicker(ctx) }, '+ Start'))));
-
-  // Andere sessie kiezen
-  app.append(el('div', { class: 'card' },
-    el('h5', {}, 'Iets anders doen?'),
-    el('div', { class: 'row wrap mt' },
+    cardHead(ICO.bolt, 'Iets anders doen?',
+      el('button', { class: 'btn-sm', onclick: () => openAdhocPicker(ctx) }, '+ Vrij')),
+    el('div', { class: 'row wrap' },
       el('button', { class: 'btn-sm', style: 'border-color:rgba(224,122,122,.4)', onclick: () => {
         update(st => { st.swaps[iso] = 'rest'; }); ctx.render();
-      } }, '🚫 Kan vandaag niet'),
+      } }, '🚫 Kan niet'),
       Object.values(SESSIONS).filter(s => s.id !== 'rest').map(s =>
         el('button', { class: 'btn-sm', onclick: () => { update(st => { st.swaps[iso] = s.id; }); ctx.render(); } }, s.name.split('·')[1]?.trim() || s.name)),
-      get().swaps[iso] ? el('button', { class: 'btn-sm btn-ghost', style: 'color:var(--accent)', onclick: () => { update(st => { delete st.swaps[iso]; }); ctx.render(); } }, '↺ Automatische planning') : null),
-    el('p', { class: 'tiny dim mt mb0' }, 'Kun je niet? De gemiste sessie verdwijnt niet — de wachtrij schuift automatisch op naar de eerstvolgende dag dat het wél past.')));
+      get().swaps[iso] ? el('button', { class: 'btn-sm btn-ghost', style: 'color:var(--accent)', onclick: () => { update(st => { delete st.swaps[iso]; }); ctx.render(); } }, '↺ Automatisch') : null),
+    explain('Hoe werkt dit?', el('p', { class: 'mb0' },
+      'Sla je een zware sessie over, dan verdwijnt die niet: de wachtrij schuift op naar de eerstvolgende dag waarop je genoeg tijd hebt én je spieren hersteld zijn. Een vrije workout telt gewoon mee in je volume en herstel.'))));
 
-  // Dagelijkse gewoontes
+  // ---------- Dagelijks ----------
   const habits = get().habits[iso] || {};
+  const activeHabits = DAILY_HABITS.filter(h => h.id !== 'hang' || S().dailyHang || S().hasPullUpBar);
   app.append(el('div', { class: 'card' },
-    el('h4', {}, 'Dagelijks'),
-    DAILY_HABITS.map(h => {
-      if (h.requiresEquipment === 'pullUpBar' && !S().hasPullUpBar) {
-        return el('div', { class: 'habit' },
-          el('input', { type: 'checkbox', checked: !!habits[h.id], onchange: e => setHabit(iso, h.id, e.target.checked) }),
-          el('div', {}, el('div', {}, h.name), el('div', { class: 'tiny dim' }, h.fallback)));
-      }
+    cardHead(ICO.check, 'Dagelijks'),
+    activeHabits.map(h => {
       let detail = h.detail;
       if (h.id === 'protein') {
         const p = proteinTarget(get().icuCache);
@@ -154,19 +206,19 @@ export async function renderToday(app, ctx) {
         el('div', {}, el('div', {}, h.name), el('div', { class: 'tiny dim' }, detail)));
     })));
 
-  // Recente sport uit intervals.icu
+  // ---------- Recente activiteiten ----------
   const actBox = el('div');
   app.append(actBox);
   const drawActs = (cache) => {
     actBox.innerHTML = '';
     const recent = (cache?.activities || []).slice(0, 5);
-    if (recent.length) {
-      actBox.append(el('div', { class: 'card' },
-        el('h4', {}, 'Recente activiteiten (intervals.icu)'),
-        recent.map(a => el('div', { class: 'spread', style: 'padding:6px 0' },
-          el('span', {}, `${icu.TYPE_NL[a.type] || a.type || '?'} · ${a.name || ''}`),
-          el('span', { class: 'tiny dim' }, `${(a.start_date_local || '').slice(5, 10)} · load ${Math.round(a.icu_training_load || 0)}`)))));
-    }
+    if (!recent.length) return;
+    actBox.append(el('div', { class: 'card' },
+      cardHead(ICO.heart, 'Recente activiteiten',
+        el('span', { class: 'pill' }, 'intervals.icu')),
+      recent.map(a => el('div', { class: 'spread', style: 'padding:7px 0;border-bottom:1px solid var(--border)' },
+        el('span', { style: 'font-size:.9rem' }, `${icu.TYPE_NL[a.type] || a.type || '?'} · ${a.name || ''}`.slice(0, 42)),
+        el('span', { class: 'tiny dim' }, `${(a.start_date_local || '').slice(5, 10)} · ${Math.round(a.icu_training_load || 0)}`)))));
   };
   drawActs(get().icuCache);
   if (icu.isConfigured()) icu.refresh().then(drawActs).catch(() => {});
@@ -177,18 +229,18 @@ function checkinCard(iso, ctx) {
   const existing = get().checkins?.[iso];
   const card = el('div', { class: 'card' });
 
-  if (existing && !card.dataset.editing) {
+  if (existing) {
     const soreList = Object.entries(existing.soreness || {}).filter(([, v]) => v)
       .map(([m, v]) => `${MUSCLE_NL[m] || m}${v === 2 ? ' 🔥' : ''}`);
     card.append(el('div', { class: 'spread' },
-      el('div', {},
-        el('h5', { class: 'mb0' }, '✓ Check-in gedaan'),
-        el('div', { class: 'tiny dim' },
-          `Motivatie ${existing.motivation ?? '–'}/5 · slaap ${existing.sleepScore ?? '–'}/5` +
-          (soreList.length ? ` · spierpijn: ${soreList.join(', ')}` : ' · geen spierpijn'))),
-      el('button', { class: 'btn-sm btn-ghost', onclick: () => {
-        update(s => { delete s.checkins[iso]; }); ctx.render();
-      } }, 'Aanpassen')));
+      el('div', { class: 'row', style: 'gap:10px' },
+        (() => { const b = el('span', { class: 'badge-ico', style: 'color:var(--accent)' }); b.innerHTML = ICO.check; return b; })(),
+        el('div', {},
+          el('div', { style: 'font-weight:600' }, 'Check-in gedaan'),
+          el('div', { class: 'tiny dim' },
+            `Motivatie ${existing.motivation ?? '–'}/5 · slaap ${existing.sleepScore ?? '–'}/5` +
+            (soreList.length ? ` · ${soreList.join(', ')}` : ' · geen spierpijn')))),
+      el('button', { class: 'btn-sm btn-ghost', onclick: () => { update(s => { delete s.checkins[iso]; }); ctx.render(); } }, 'Aanpassen')));
     return card;
   }
 
@@ -211,8 +263,7 @@ function checkinCard(iso, ctx) {
   for (const m of SORE_MUSCLES) {
     const pill = el('span', { class: 'pill', style: 'cursor:pointer' }, MUSCLE_NL[m]);
     pill.addEventListener('click', () => {
-      const cur = state.soreness[m] || 0;
-      const next = (cur + 1) % 3;
+      const next = ((state.soreness[m] || 0) + 1) % 3;
       state.soreness[m] = next;
       pill.className = 'pill ' + (next === 1 ? 'warn' : next === 2 ? 'danger' : '');
       pill.textContent = MUSCLE_NL[m] + (next === 1 ? ' 😖' : next === 2 ? ' 🔥' : '');
@@ -221,10 +272,10 @@ function checkinCard(iso, ctx) {
   }
 
   card.append(
-    el('h5', {}, '☀️ Check-in (15 sec)'),
+    cardHead(ICO.sun, 'Check-in', el('span', { class: 'pill' }, '15 sec')),
     el('label', {}, 'Motivatie om te trainen'), scaleRow('motivation'),
     el('label', {}, 'Hoe heb je geslapen?'), scaleRow('sleepScore'),
-    el('label', {}, 'Spierpijn? Tik aan (nog eens tikken = erger)'), soreRow,
+    el('label', {}, 'Spierpijn? Tik aan (nog eens = erger)'), soreRow,
     el('button', { class: 'btn-secondary btn-block mt', onclick: () => {
       update(s => { s.checkins[iso] = { motivation: state.motivation, sleepScore: state.sleepScore, soreness: state.soreness }; });
       toast('Check-in opgeslagen — advies bijgewerkt');

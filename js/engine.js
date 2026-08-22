@@ -143,6 +143,53 @@ function plannedSummary(iso) {
   };
 }
 
+// ---------- Beschikbaarheid (minuten per weekdag) ----------
+
+export function dowOf(iso) { return (new Date(iso + 'T12:00:00').getDay() + 6) % 7; } // 0 = maandag
+
+export function minutesOn(iso) {
+  const av = S().availability || [60, 15, 60, 15, 60, 30, 0];
+  return av[dowOf(iso)] ?? 0;
+}
+
+/** Hoeveel zware sessies wil/kan hij deze week kwijt? */
+export function heavyTargetForWeek(iso) {
+  const av = S().availability || [];
+  const longDays = av.filter(m => m >= 40).length;
+  const wish = S().heavyPerWeek ?? 3;
+  return Math.max(1, Math.min(wish, longDays || 1));
+}
+
+/** Geschatte duur van een uitgewerkte sessie in minuten (incl. rust + wisseltijd). */
+export function estimateMinutes(slots) {
+  let sec = 0;
+  for (const s of slots) sec += s.sets * (s.rest + 45) + 40;
+  return Math.round(sec / 60);
+}
+
+/** Pas de sessie in de beschikbare tijd: eerst sets trimmen, dan oefeningen laten vallen. */
+export function fitToTime(slots, maxMin) {
+  if (!maxMin || !slots.length) return { slots, trimmed: null };
+  let out = slots.map(s => ({ ...s }));
+  if (estimateMinutes(out) <= maxMin) return { slots: out, trimmed: null };
+  let droppedSets = 0, droppedEx = 0;
+  // 1. Sets afpellen van achteren (hoofdlift houdt minimaal 3, rest minimaal 2)
+  for (let guard = 0; guard < 40 && estimateMinutes(out) > maxMin; guard++) {
+    let changed = false;
+    for (let i = out.length - 1; i >= 0; i--) {
+      const floor = i === 0 ? 3 : 2;
+      if (out[i].sets > floor) { out[i].sets -= 1; droppedSets++; changed = true; break; }
+    }
+    if (!changed) break;
+  }
+  // 2. Nog te lang? Laatste oefeningen laten vallen (hoofdlift + 1 blijft altijd staan)
+  while (estimateMinutes(out) > maxMin && out.length > 2) { out.pop(); droppedEx++; }
+  const parts = [];
+  if (droppedEx) parts.push(`${droppedEx} oefening${droppedEx > 1 ? 'en' : ''} eraf`);
+  if (droppedSets) parts.push(`${droppedSets} set${droppedSets > 1 ? 's' : ''} minder`);
+  return { slots: out, trimmed: parts.length ? `Ingekort tot ~${maxMin} min: ${parts.join(' en ')}.` : null };
+}
+
 // ---------- Wachtrij-planner ----------
 // Geen vaste weekdagen meer: A→B→C-cyclus op basis van wat er echt gedaan is.
 // Gemiste sessies schuiven vanzelf op; doel = 3 zware sessies per week, liefst om de dag.
@@ -190,9 +237,14 @@ export function schedule(targetIso, fromIso = todayISO()) {
     } else {
       const wkKey = mondayOf(cursor);
       const heavyCount = heavyByWeek[wkKey] || 0;
-      const need = Math.max(0, 3 - heavyCount);
-      const dow = (new Date(cursor + 'T12:00:00').getDay() + 6) % 7; // 0=ma
-      const remaining = 7 - dow;
+      const need = Math.max(0, heavyTargetForWeek(cursor) - heavyCount);
+      const dow = dowOf(cursor);
+      const mins = minutesOn(cursor);
+      // hoeveel lange dagen resten er deze week nog (incl. vandaag)?
+      const av = S().availability || [];
+      let longDaysLeft = 0;
+      for (let dd = dow; dd < 7; dd++) if ((av[dd] ?? 0) >= 40) longDaysLeft++;
+      const remaining = Math.max(1, longDaysLeft);
       const gap = lastHeavyDate ? daysBetween(lastHeavyDate, cursor) : 99;
       const candidate = nextInCycle(lastHeavyId);
       const recMap = muscleRecoveryMap(cursor, sim);
@@ -202,8 +254,14 @@ export function schedule(targetIso, fromIso = todayISO()) {
       let eligible = sessionMusclesReady(SESSIONS[candidate], cursor, recMap);
       // beenwerk niet op/rond een stevige benen-sportdag
       if (hasQuads && (planToday.legHard || planTomorrow.legHard)) eligible = false;
-      const mustCatchUp = need >= remaining; // anders haal je de 3 niet meer
-      if (need > 0 && eligible && !planToday.hard && (gap >= 2 || mustCatchUp)) {
+      const mustCatchUp = need >= remaining; // anders haal je het weekdoel niet meer
+      if (mins === 0) {
+        pick = 'rest';
+        reason = 'geen tijd ingepland';
+      } else if (mins < 40 && need > 0 && eligible && !planToday.hard) {
+        pick = lastSnackId === 'snackCore' ? 'snackPump' : 'snackCore';
+        reason = `${mins} min beschikbaar — korte sessie`;
+      } else if (need > 0 && eligible && !planToday.hard && (gap >= 2 || mustCatchUp)) {
         pick = candidate;
         reason = mustCatchUp && gap < 2 ? 'inhaalsessie (weekdoel)' : (gap >= 7 ? 'opgeschoven sessie' : '');
       } else if (planToday.hard) {
@@ -213,7 +271,7 @@ export function schedule(targetIso, fromIso = todayISO()) {
       } else if (need > 0 && !eligible) {
         pick = lastSnackId === 'snackCore' ? 'snackPump' : 'snackCore';
         reason = (hasQuads && planTomorrow.legHard) ? 'morgen zware benen-sport — beenwerk schuift op' : 'spieren nog niet hersteld — zware sessie schuift op';
-      } else if (dow === 6) {
+      } else if (dow === 6 || mins === 0) {
         pick = 'rest';
       } else {
         pick = lastSnackId === 'snackCore' ? 'snackPump' : 'snackCore';
@@ -376,15 +434,21 @@ export function advise(iso, cache) {
   return { session, base, level, reasons, adjust, deload, form, meso, plannerReason: planned.reason };
 }
 
-/** Werk de sessie-slots uit incl. aanpassingen en gewichtssuggesties. */
-export function buildWorkout(session, adjust = { setFactor: 1, rirBonus: 0, restBonus: 0 }) {
-  return session.slots.map(slot => {
+/** Werk de sessie-slots uit incl. aanpassingen, tijdlimiet en gewichtssuggesties. */
+export function buildWorkout(session, adjust = { setFactor: 1, rirBonus: 0, restBonus: 0 }, timeCapMin = null) {
+  let built = session.slots.map(slot => {
     const ex = byId[slot.ex];
     const sets = Math.max(1, Math.round(slot.sets * (adjust.setFactor ?? 1)));
     const rir = Math.min(5, slot.rir + (adjust.rirBonus ?? 0));
     const rest = slot.rest + (adjust.restBonus ?? 0);
     return { ...slot, exercise: ex, sets, rir, rest, suggestion: suggestWeight(slot.ex, slot.reps) };
   });
+  if (timeCapMin) {
+    const fitted = fitToTime(built, timeCapMin);
+    built = fitted.slots;
+    if (fitted.trimmed) built.trimmedNote = fitted.trimmed;
+  }
+  return built;
 }
 
 // ---------- Progressie (double progression + dumbbell-inventaris) ----------
@@ -415,21 +479,114 @@ export function stepDown(current) {
   return Math.max(1, current - (S().weightStepKg || PROGRESSION.weightStepKg));
 }
 
+/** Sets van de meest recente sessie waarin deze oefening voorkwam. */
+export function lastSessionSets(exId) {
+  const logs = [...get().logs].sort((a, b) => a.date.localeCompare(b.date));
+  for (let i = logs.length - 1; i >= 0; i--) {
+    const sets = logs[i].sets.filter(s => s.done && s.reps && s.ex === exId);
+    if (sets.length) return { date: logs[i].date, sets };
+  }
+  return null;
+}
+
+/**
+ * RIR-gedreven progressie. Jouw gelogde inspanning stuurt het volgende gewicht —
+ * niet alleen of de rep-range vol was. Zo blijf je elke sessie tegen (verantwoord)
+ * spierfalen aan trainen in plaats van eindeloos in een te licht gewicht hangen.
+ *
+ * gemiddelde RIR ≥ 3,5 → 2 stappen zwaarder (was duidelijk te licht)
+ * gemiddelde RIR ≥ 2,5 → 1 stap zwaarder, ook als de range nog niet vol was
+ * gemiddelde RIR 1-2   → klassieke double progression (range vol → 1 stap)
+ * gemiddelde RIR 0 + reps onder de range → 1 stap terug, techniek herstellen
+ */
 export function suggestWeight(exId, repRange) {
-  const last = get().lastWeights[exId];
   const ex = byId[exId];
   const isBodyweight = ex && ex.equipment.every(q => ['bodyweight', 'resistanceBands', 'abWheel', 'pullUpBar'].includes(q));
-  if (!last) return { weight: null, text: isBodyweight ? 'Lichaamsgewicht' : 'Kies een gewicht waarmee je nét de reps haalt', isNew: true };
-  if (!isBodyweight && last.reps >= repRange[1]) {
-    const nw = nextWeight(last.weight);
-    if (nw > last.weight) return { weight: nw, text: `${nw} kg (vorige keer ${last.reps}×${last.weight} kg — range vol, dus omhoog!)`, isUp: true };
-    return { weight: last.weight, text: `${last.weight} kg — zwaarste dumbbell bereikt: meer reps, langzamer tempo of pauze bovenin`, isUp: true };
+  const last = get().lastWeights[exId];
+  const prev = lastSessionSets(exId);
+
+  if (!last && !prev) {
+    return {
+      weight: null, isNew: true,
+      text: isBodyweight ? 'Lichaamsgewicht — noteer je reps' : 'Kies een gewicht waarmee je nét de reps haalt',
+      why: 'Eerste keer: mik op een gewicht waarbij set 1 aanvoelt als 2 reps over.',
+    };
   }
+
+  // gemiddelde RIR van de vorige sessie (alleen als hij echt gelogd is)
+  let avgRir = null, topReps = 0, minReps = 99;
+  if (prev) {
+    const rirs = prev.sets.map(s => s.rir).filter(r => r != null);
+    if (rirs.length) avgRir = rirs.reduce((t, r) => t + r, 0) / rirs.length;
+    for (const s of prev.sets) { topReps = Math.max(topReps, s.reps); minReps = Math.min(minReps, s.reps); }
+  }
+  const w = last?.weight ?? 0;
+  const reps = last?.reps ?? topReps;
+  const rangeFull = reps >= repRange[1];
+
+  // --- lichaamsgewicht/band: sturen op reps en tempo ---
   if (isBodyweight) {
-    if (last.reps >= repRange[1]) return { weight: last.weight || null, text: `Vorige keer ${last.reps} reps — probeer zwaarder (band/tempo) of meer reps`, isUp: true };
-    return { weight: last.weight || null, text: `Vorige keer ${last.reps} reps — probeer er 1-2 meer` };
+    if (avgRir != null && avgRir >= 3.5) return { weight: w || null, isUp: true, text: `Vorige keer ${reps} reps met ${avgRir.toFixed(0)} in reserve — véél te licht`, why: 'Maak het zwaarder: band erbij, 3 sec zakken, of pauze onderin. Mik op RIR 1.' };
+    if (rangeFull) return { weight: w || null, isUp: true, text: `Vorige keer ${reps} reps — range vol`, why: 'Verzwaren: band, tempo (3 sec zakken) of een moeilijkere variant.' };
+    return { weight: w || null, text: `Vorige keer ${reps} reps — pak er 1-2 bij`, why: 'Blijf binnen de range tot je de bovengrens haalt.' };
   }
-  return { weight: last.weight, text: `${last.weight} kg (vorige keer ${last.reps} reps — mik op ${Math.min(last.reps + 1, repRange[1])})` };
+
+  // --- met gewicht ---
+  if (avgRir != null && avgRir >= 3.5 && w) {
+    const nw = nextWeight(nextWeight(w));
+    if (nw > w) return { weight: nw, isUp: true, big: true, text: `${nw} kg — twee stappen omhoog`, why: `Je had vorige keer gemiddeld ${avgRir.toFixed(1)} reps over. Dat is ver van spierfalen: te licht om te groeien.` };
+  }
+  if (avgRir != null && avgRir >= 2.5 && w) {
+    const nw = nextWeight(w);
+    if (nw > w) return { weight: nw, isUp: true, text: `${nw} kg — omhoog`, why: `Gemiddeld ${avgRir.toFixed(1)} reps over vorige keer; je kunt dichter tegen falen aan.` };
+  }
+  if (avgRir != null && avgRir <= 0.2 && minReps < repRange[0] && w) {
+    const nw = stepDown(w);
+    if (nw < w) return { weight: nw, isDown: true, text: `${nw} kg — stapje terug`, why: 'Vorige keer ging je stuk vóór de rep-range. Iets lichter, strakke techniek, dan weer omhoog.' };
+    return { weight: w, text: `${w} kg — houden`, why: 'Vorige keer zwaar; consolideer dit gewicht eerst.' };
+  }
+  if (rangeFull && w) {
+    const nw = nextWeight(w);
+    if (nw > w) return { weight: nw, isUp: true, text: `${nw} kg — range was vol`, why: `Vorige keer ${reps}×${w} kg gehaald. Double progression: gewicht omhoog, reps mogen weer laag beginnen.` };
+    return { weight: w, isUp: true, text: `${w} kg — zwaarste dumbbell`, why: 'Meer reps, langzamer zakken of pauze bovenin als extra prikkel.' };
+  }
+  return {
+    weight: w || null,
+    text: `${w} kg — mik op ${Math.min(reps + 1, repRange[1])} reps`,
+    why: avgRir != null ? `Vorige keer ${reps} reps met RIR ${avgRir.toFixed(1)} — precies goed, bouw rep voor rep op.` : `Vorige keer ${reps} reps. Eén rep meer is al progressie.`,
+  };
+}
+
+/** Coach-tekst voor de laatste set van een oefening: verantwoord tot dicht bij falen. */
+export function lastSetCue(slot) {
+  if (slot.rir <= 1) return 'Laatste set: geef alles tot je techniek breekt — dát is het punt waar de groei zit.';
+  return `Laatste set: mag 1 rep dichter tegen falen dan de vorige (RIR ${Math.max(0, slot.rir - 1)}).`;
+}
+
+/** Inspanningskwaliteit: hoeveel van je sets landden in de effectieve zone (RIR 0-3)? */
+export function effortQuality(days = 14) {
+  const from = addDays(todayISO(), -days);
+  let effective = 0, junk = 0, failure = 0, total = 0;
+  for (const log of get().logs) {
+    if (log.date < from) continue;
+    for (const s of log.sets) {
+      if (!s.done || s.rir == null) continue;
+      total++;
+      if (s.rir <= 3) effective++; else junk++;
+      if (s.rir <= 1) failure++;
+    }
+  }
+  if (!total) return null;
+  return {
+    total, effective, junk, failure,
+    pctEffective: Math.round((effective / total) * 100),
+    pctFailure: Math.round((failure / total) * 100),
+    advice: junk / total > 0.35
+      ? 'Meer dan een derde van je sets bleef ver van spierfalen (RIR 4+). Dat is volgens je rapport "junk volume": de prikkel is te klein om te groeien. Ga zwaarder — de app stelt het nu vanzelf voor.'
+      : failure / total < 0.2
+        ? 'Je traint netjes, maar zelden echt tegen je grens aan. Pak op de laatste set van elke oefening bewust RIR 0-1.'
+        : 'Sterk: je sets landen consequent in de zone waar spiergroei gebeurt.',
+  };
 }
 
 /** Beste set per oefening uit een log. */

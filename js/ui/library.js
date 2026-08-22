@@ -1,6 +1,6 @@
 // Oefeningenbibliotheek met filters en video's
 
-import { el, videoBlock, sheet, toast } from './common.js';
+import { el, videoBlock, demoBlock, sheet, toast } from './common.js';
 import { EXERCISES, MUSCLE_NL, EQUIPMENT_NL, byId } from '../data/exercises.js';
 import { get, S, update } from '../state.js';
 import { exerciseHistory } from '../engine.js';
@@ -44,7 +44,7 @@ export function renderLibrary(app) {
         el('div', { class: 'grow' },
           el('div', {}, ex.nameNL),
           el('div', { class: 'mus' }, `${MUSCLE_NL[ex.muscle] || ex.muscle} · ${ex.equipment.map(q => EQUIPMENT_NL[q] || q).join(', ')}`)),
-        el('span', { class: 'dim' }, ex.video ? '🎬' : '›')));
+        el('span', { class: 'dim' }, ex.demo ? '▶' : ex.video ? '🎬' : '›')));
     }
     app.append(card);
     app.append(el('p', { class: 'tiny dim center' }, `${list.length} oefeningen`));
@@ -57,8 +57,9 @@ function openDetail(ex) {
     el('h3', {}, ex.nameNL),
     el('div', { class: 'tiny dim' }, `${MUSCLE_NL[ex.muscle] || ex.muscle}${ex.secondary?.length ? ' · ook: ' + ex.secondary.map(m => MUSCLE_NL[m] || m).join(', ') : ''}`),
     el('div', { class: 'mt' }, ex.equipment.map(q => el('span', { class: 'pill' }, EQUIPMENT_NL[q] || q))),
-    videoBlock(ex),
-    el('p', { class: 'tiny' }, ex.instructions),
+    demoBlock(ex) || videoBlock(ex),
+    el('p', { class: 'tiny mt' }, ex.instructions),
+    ex.demo && ex.video ? el('a', { class: 'btn btn-sm btn-ghost', style: 'text-decoration:none', href: `https://www.youtube.com/watch?v=${ex.video}`, target: '_blank', rel: 'noopener' }, '▶ Uitgebreide video ↗') : null,
     ex.tips ? el('p', { class: 'tiny', style: 'color:var(--primary)' }, '💡 ' + ex.tips) : null,
     el('div', { class: 'tiny dim' }, `Moeilijkheid: ${'●'.repeat(ex.difficulty || 1)}${'○'.repeat(5 - (ex.difficulty || 1))} · herstel ±${ex.recoveryHours} uur`));
   if (exerciseHistory(ex.id).length) {

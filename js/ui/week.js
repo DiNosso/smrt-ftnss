@@ -1,6 +1,6 @@
 // Weekoverzicht: wachtrij-planning (vooruit gesimuleerd) + gedane workouts + intervals.icu
 
-import { el, DAY_NL, sheet, toast, fmtDate } from './common.js';
+import { el, DAY_NL, sheet, toast, fmtDate, explain, cardHead, ICO } from './common.js';
 import { get, update, todayISO, addDays } from '../state.js';
 import { schedule, mondayOf, mesoInfo, plannedOn, SPORT_CHOICES } from '../engine.js';
 import { SESSIONS } from '../data/program.js';
@@ -73,10 +73,10 @@ export function renderWeek(app, ctx) {
     app.append(card);
 
     app.append(el('div', { class: 'card' },
-      el('h5', {}, 'Hoe deze planning werkt'),
-      el('p', { class: 'tiny dim mb0' },
+      explain('Hoe deze planning werkt',
+      el('p', { class: 'mb0' },
         'Geen vaste dagen: de app werkt met een wachtrij (A → B → C). Mis je een sessie, dan schuift alles automatisch op — met bewaking van spierherstel (±48 uur per spiergroep) en een doel van 3 zware sessies per week. ' +
-        'Elke 4 opbouwweken bouwt het volume op van rustig (MEV) naar piek (MRV), gevolgd door een deloadweek. Bij aanhoudend slechte vorm of slaap komt de deload eerder.')));
+        'Elke 4 opbouwweken bouwt het volume op van rustig (MEV) naar piek (MRV), gevolgd door een deloadweek. Bij aanhoudend slechte vorm of slaap komt de deload eerder. Zware sessies landen alleen op dagen waarop je 40+ minuten hebt ingepland (zie Instellingen).'))));
   };
 
   draw(0);

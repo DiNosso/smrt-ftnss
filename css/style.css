@@ -14,10 +14,12 @@
   --text-dim: #8fa8a3;
   --text-faint: #5f7772;
   --background: #050a09;
-  --surface: #0b1211;
-  --surface-2: #121c1a;
-  --border: rgba(154, 224, 212, .08);
-  --border-strong: rgba(154, 224, 212, .16);
+  --surface: #0d1614;
+  --surface-2: #141f1d;
+  --surface-3: #1a2725;
+  --border: rgba(154, 224, 212, .09);
+  --border-strong: rgba(154, 224, 212, .18);
+  --hairline: rgba(255, 255, 255, .06);
   --primary: #9ae0d4;
   --secondary: #198775;
   --accent: #38edd0;
@@ -344,3 +346,182 @@ nav.tabbar button.active { color: var(--accent); }
 }
 
 hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+
+
+/* ============================================================
+   v2.5 — rijkere UI: elevatie, ringen, spierkaart, animaties
+   ============================================================ */
+
+/* Kaarten krijgen een subtiele lichtrand bovenaan (dark-UI elevatie) */
+.card { box-shadow: inset 0 1px 0 var(--hairline); }
+.card.raised { background: var(--surface-2); }
+
+/* Kaartkop met icoonbadge */
+.cardhead { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.cardhead .badge-ico {
+  width: 30px; height: 30px; flex: none;
+  border-radius: 9px;
+  background: rgba(25, 135, 117, .16);
+  color: var(--primary);
+  display: flex; align-items: center; justify-content: center;
+}
+.cardhead .badge-ico svg { width: 17px; height: 17px; }
+.cardhead h4, .cardhead h5 { margin: 0; }
+.cardhead .grow { min-width: 0; }
+
+/* Hero met ring */
+.herowrap { display: flex; align-items: center; gap: 18px; margin: 6px 0 18px; }
+.herowrap .heroinfo { flex: 1; min-width: 0; }
+.ring { position: relative; width: 108px; height: 108px; flex: none; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring .track { stroke: rgba(255,255,255,.07); }
+.ring .val { stroke: url(#ringgrad); stroke-linecap: round; filter: drop-shadow(0 0 10px rgba(56,237,208,.45)); transition: stroke-dashoffset .9s cubic-bezier(.22,1,.36,1); }
+.ring .mid {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 1px;
+}
+.ring .mid .n { font-family: var(--font-display); font-size: 1.5rem; line-height: 1; color: var(--text); font-variant-numeric: tabular-nums; }
+.ring .mid .l { font-size: .55rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-faint); }
+
+/* Statrij met hairline-scheiders (geen kaartjes) */
+.statrow { display: flex; margin: 2px 0 14px; }
+.statrow > div { flex: 1; text-align: center; padding: 4px 2px; }
+.statrow > div + div { border-left: 1px solid var(--hairline); }
+.statrow .n { font-family: var(--font-display); font-size: 1.5rem; line-height: 1.1; color: var(--text); font-variant-numeric: tabular-nums; }
+.statrow .n.accent { color: var(--accent); }
+.statrow .l { font-size: .6rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--text-faint); margin-top: 3px; }
+
+/* Weekstrip */
+.weekstrip { display: flex; gap: 6px; align-items: flex-end; height: 64px; }
+.weekstrip .col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; height: 100%; justify-content: flex-end; }
+.weekstrip .bar {
+  width: 100%; border-radius: 6px; background: rgba(255,255,255,.06);
+  min-height: 5px; transition: height .5s cubic-bezier(.22,1,.36,1);
+}
+.weekstrip .bar.done { background: linear-gradient(180deg, var(--accent), var(--secondary)); }
+.weekstrip .bar.planned { background: rgba(154,224,212,.18); }
+.weekstrip .col.today .bar { outline: 1.5px solid var(--accent); outline-offset: 1px; }
+.weekstrip .dl { font-size: .58rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--text-faint); }
+.weekstrip .col.today .dl { color: var(--accent); }
+
+/* Spierkaart (silhouet) */
+.bodymap { display: flex; gap: 10px; justify-content: center; align-items: center; }
+.bodymap svg { height: 132px; width: auto; }
+.bodymap .mz { transition: fill .5s ease; stroke: rgba(255,255,255,.07); stroke-width: .8; }
+.bodymap .body { fill: rgba(255,255,255,.045); stroke: rgba(255,255,255,.07); stroke-width: .8; }
+.bodylegend { display: flex; gap: 10px; justify-content: center; margin-top: 8px; }
+.bodylegend span { font-size: .6rem; color: var(--text-faint); display: flex; align-items: center; gap: 4px; }
+.bodylegend i { width: 9px; height: 9px; border-radius: 3px; display: inline-block; }
+
+/* CTA-kaart met gloed i.p.v. foto */
+.cta {
+  position: relative; overflow: hidden;
+  background:
+    radial-gradient(120% 85% at 88% -12%, rgba(56,237,208,.20), transparent 62%),
+    linear-gradient(168deg, #10201d, #0d1614 58%);
+  border-color: rgba(56,237,208,.26);
+}
+.cta::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(58deg, rgba(255,255,255,.035) 0 1px, transparent 1px 9px);
+}
+.cta > * { position: relative; z-index: 1; }
+
+/* Uitklapbare uitleg */
+details.explain { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 10px; }
+details.explain > summary {
+  list-style: none; cursor: pointer;
+  font-size: .74rem; font-weight: 650; letter-spacing: .05em; text-transform: uppercase;
+  color: var(--text-faint); display: flex; align-items: center; gap: 6px;
+}
+details.explain > summary::-webkit-details-marker { display: none; }
+details.explain > summary::after { content: '⌄'; margin-left: auto; transition: transform .2s ease; font-size: 1rem; }
+details.explain[open] > summary::after { transform: rotate(180deg); }
+details.explain .body { font-size: .8rem; line-height: 1.5; color: var(--text-dim); padding-top: 8px; }
+details.explain.solo { border-top: none; margin-top: 0; padding-top: 0; }
+
+/* Demo-animatie (2 frames) */
+.demo { position: relative; width: 100%; aspect-ratio: 3/2; border-radius: var(--radius-sm); overflow: hidden; background: #000; }
+.demo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .18s linear; }
+.demo img.on { opacity: 1; }
+.demo .tag {
+  position: absolute; left: 8px; bottom: 8px; z-index: 2;
+  background: rgba(5,10,9,.72); backdrop-filter: blur(6px);
+  border-radius: 7px; padding: 3px 8px; font-size: .62rem; font-weight: 650;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--primary);
+}
+
+/* Setrij-statussen in de player */
+.setrow { border-radius: 10px; padding: 3px 4px; transition: background .18s ease, box-shadow .18s ease; }
+.setrow.active { background: var(--surface-3); box-shadow: inset 3px 0 0 var(--accent); }
+.setrow.filled { background: rgba(56, 237, 208, .06); }
+.setrow .done-btn.done svg { animation: draw .28s ease forwards; }
+@keyframes draw { from { transform: scale(.7); opacity: .3; } to { transform: scale(1); opacity: 1; } }
+
+/* Voortgangsbalk bovenin de player */
+.player-progress { height: 3px; background: rgba(255,255,255,.07); border-radius: 3px; overflow: hidden; margin-top: 8px; }
+.player-progress i { display: block; height: 100%; background: linear-gradient(90deg, var(--secondary), var(--accent)); transition: width .4s cubic-bezier(.22,1,.36,1); }
+
+/* Rusttimer met ring */
+.resttimer .rring { width: 42px; height: 42px; flex: none; position: relative; }
+.resttimer .rring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.resttimer .rring .t { stroke: rgba(255,255,255,.12); }
+.resttimer .rring .v { stroke: var(--accent); stroke-linecap: round; }
+
+/* Ruimte onder de content zolang de rusttimer in beeld staat */
+body.resting #app { padding-bottom: calc(var(--tabbar-h) + 96px); }
+
+/* Confetti bij PR */
+.confetti-wrap { position: fixed; inset: 0; pointer-events: none; z-index: 99; overflow: hidden; }
+.confetti-wrap i {
+  position: absolute; width: 8px; height: 12px; border-radius: 2px;
+  animation: fall 1.5s cubic-bezier(.3,.7,.5,1) forwards;
+}
+@keyframes fall {
+  0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(105vh) rotate(540deg); opacity: 0; }
+}
+
+/* Skeleton / lege staat */
+.ghost { opacity: .35; filter: grayscale(.6); pointer-events: none; }
+.emptyhint { text-align: center; color: var(--text-dim); font-size: .82rem; padding: 4px 0 2px; }
+
+/* Beschikbaarheid-editor */
+.availrow { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+.availrow:last-child { border-bottom: none; }
+.availrow .dn { width: 34px; font-size: .74rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--text-dim); flex: none; }
+.availrow .opts { display: flex; gap: 5px; flex: 1; }
+.availrow .opts button { flex: 1; padding: 8px 2px; font-size: .74rem; border-radius: 9px; }
+.availrow .opts button.on { background: var(--secondary); border-color: var(--secondary); color: #eafffb; font-weight: 700; }
+
+/* TV / cast-modus */
+.tv {
+  position: fixed; inset: 0; z-index: 200; background: var(--background);
+  display: flex; flex-direction: column; padding: 3vmin 4vmin;
+  overflow: hidden;
+}
+.tv .tvtop { display: flex; align-items: center; gap: 16px; margin-bottom: 2vmin; padding-right: 190px; }
+.tv .tvtop .t { font-family: var(--font-display); font-size: clamp(1.1rem, 3.2vmin, 2.4rem); color: var(--primary); }
+.tv .tvtop .clock { margin-left: auto; font-family: var(--font-display); font-size: clamp(1rem, 3vmin, 2.2rem); color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.tv .tvmain { flex: 1; display: flex; gap: 3vmin; min-height: 0; }
+.tv .tvvid { flex: 1.25; border-radius: 14px; overflow: hidden; background: #000; position: relative; min-height: 0; }
+.tv .tvvid img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity .18s linear; }
+.tv .tvvid img.on { opacity: 1; }
+.tv .tvvid iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.tv .tvside { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 2vmin; min-width: 0; }
+.tv .tvex { font-family: var(--font-display); font-size: clamp(1.5rem, 5.4vmin, 4rem); line-height: 1.05; }
+.tv .tvscheme { font-size: clamp(1.4rem, 5vmin, 3.6rem); font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+.tv .tvmeta { font-size: clamp(.8rem, 2.2vmin, 1.4rem); color: var(--text-dim); }
+.tv .tvbig { font-family: var(--font-display); font-size: clamp(3rem, 16vmin, 12rem); color: var(--accent); line-height: 1; font-variant-numeric: tabular-nums; }
+.tv .tvnext {
+  margin-top: 2vmin; padding-top: 1.6vmin; border-top: 1px solid var(--border);
+  font-size: clamp(.75rem, 2vmin, 1.2rem); color: var(--text-faint);
+}
+.tv .tvnext b { color: var(--text-dim); font-weight: 600; }
+.tv .tvbar { height: 5px; background: rgba(255,255,255,.08); border-radius: 4px; overflow: hidden; margin-top: 2vmin; }
+.tv .tvbar i { display: block; height: 100%; background: linear-gradient(90deg, var(--secondary), var(--accent)); }
+.tv .tvctl { position: absolute; top: 2.4vmin; right: 3vmin; z-index: 3; display: flex; gap: 8px; }
+@media (orientation: portrait) and (max-width: 700px) {
+  .tv .tvmain { flex-direction: column; }
+  .tv .tvvid { flex: none; aspect-ratio: 16/9; }
+}

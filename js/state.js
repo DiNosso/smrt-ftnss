@@ -1,7 +1,7 @@
 // Eenvoudige localStorage-state. Alles lokaal, niets verlaat je toestel
 // behalve directe calls naar intervals.icu en YouTube.
 
-export const VERSION = '2.4.0';
+export const VERSION = '2.5.0';
 
 const KEY = 'fait.v1';
 
@@ -19,6 +19,10 @@ const DEFAULTS = {
     goalMode: 'recomp',        // 'recomp' | 'cut' | 'maintain'
     pushToIcu: true,           // afgeronde workouts naar intervals.icu sturen
     lastMonthCheck: null,      // ISO-datum laatste maandcheck
+    // Beschikbaarheid: minuten per weekdag (index 0 = maandag). 0 = geen tijd.
+    availability: [60, 15, 60, 15, 60, 30, 0],
+    heavyPerWeek: 3,           // gewenst aantal zware sessies per week
+    dailyHang: false,          // dagelijks hangen tonen (alleen zinvol met stang/rek)
     lastBackupAt: null,        // ISO-datum laatste backup-export
   },
   weights: {},                 // {'YYYY-MM-DD': kg} handmatige wegingen

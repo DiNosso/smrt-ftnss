@@ -1,6 +1,6 @@
 // Instellingen: intervals.icu, materiaal, programma, data
 
-import { el, toast } from './common.js';
+import { el, toast, cardHead, explain, ICO, DAY_NL } from './common.js';
 import { get, S, update, exportData, importData, todayISO, VERSION } from '../state.js';
 import { EQUIPMENT_NL } from '../data/exercises.js';
 import * as icu from '../icu.js';
@@ -40,6 +40,34 @@ export function renderSettings(app, ctx) {
       el('div', {}, el('span', {}, 'Workouts terugsturen naar intervals.icu'),
         el('div', { class: 'tiny dim' }, 'Afgeronde sessies worden als WeightTraining-activiteit gepost, zodat je vorm (CTL/ATL) ook je krachttraining meetelt.')))));
 
+  // --- Beschikbaarheid ---
+  const OPTS = [0, 15, 30, 45, 60, 75];
+  const availCard = el('div', { class: 'card' });
+  const drawAvail = () => {
+    availCard.innerHTML = '';
+    const av = [...(S().availability || [60, 15, 60, 15, 60, 30, 0])];
+    const longDays = av.filter(m => m >= 40).length;
+    availCard.append(cardHead(ICO.cal, 'Wanneer heb je tijd?',
+      el('span', { class: 'pill' + (longDays >= (S().heavyPerWeek ?? 3) ? ' good' : ' warn') }, `${longDays} lange dag${longDays === 1 ? '' : 'en'}`)));
+    availCard.append(el('p', { class: 'tiny dim' }, 'Zet per dag hoeveel minuten je kwijt kunt. 40+ minuten = ruimte voor een zware sessie; korter wordt automatisch een snack; 0 is een rustdag.'));
+    for (let d = 0; d < 7; d++) {
+      const opts = el('div', { class: 'opts' }, OPTS.map(m => el('button', {
+        class: (av[d] === m ? 'on' : ''),
+        onclick: () => { update(st => { const a = [...(st.settings.availability || av)]; a[d] = m; st.settings.availability = a; }); drawAvail(); },
+      }, m === 0 ? '–' : m)));
+      availCard.append(el('div', { class: 'availrow' }, el('span', { class: 'dn' }, DAY_NL[d]), opts));
+    }
+    const hpw = el('div', { class: 'seg mt' }, [2, 3, 4, 5].map(n => el('button', {
+      class: (S().heavyPerWeek === n ? 'on' : ''),
+      onclick: () => { update(st => { st.settings.heavyPerWeek = n; }); drawAvail(); },
+    }, String(n))));
+    availCard.append(el('label', {}, 'Zware sessies per week (streven)'), hpw);
+    availCard.append(explain('Hoe gebruikt de app dit?', el('p', { class: 'mb0' },
+      'De wachtrij plant zware sessies alleen op dagen met 40+ minuten en houdt zich aan je streefaantal. Heb je op een dag minder tijd dan de sessie kost, dan kort de app hem automatisch in: eerst sets eraf (hoofdlift houdt er minimaal 3), daarna de laatste oefeningen. Zo blijft de belangrijkste prikkel altijd staan.')));
+  };
+  drawAvail();
+  app.append(availCard);
+
   // --- Materiaal ---
   const eqCard = el('div', { class: 'card' }, el('h4', {}, 'Mijn materiaal'));
   for (const q of HOME_EQUIPMENT) {
@@ -55,8 +83,11 @@ export function renderSettings(app, ctx) {
       el('span', {}, EQUIPMENT_NL[q] || q)));
   }
   eqCard.append(el('div', { class: 'habit' },
-    el('input', { type: 'checkbox', checked: S().hasPullUpBar, onchange: e => { update(s => { s.settings.hasPullUpBar = e.target.checked; }); } }),
-    el('div', {}, el('span', {}, 'Optrekstang'), el('div', { class: 'tiny dim' }, 'Zet aan zodra je er een hebt — dan wordt dagelijks hangen actief onderdeel van je plan.'))));
+    el('input', { type: 'checkbox', checked: S().hasPullUpBar, onchange: e => { update(s => { s.settings.hasPullUpBar = e.target.checked; }); ctx.render(); } }),
+    el('div', {}, el('span', {}, 'Optrekstang'), el('div', { class: 'tiny dim' }, 'Zet aan zodra je er een hebt — dan verschijnt dagelijks hangen weer in je dagelijkse lijstje.'))));
+  eqCard.append(el('div', { class: 'habit' },
+    el('input', { type: 'checkbox', checked: S().dailyHang, onchange: e => { update(s => { s.settings.dailyHang = e.target.checked; }); ctx.render(); } }),
+    el('div', {}, el('span', {}, 'Dagelijks hangen tonen'), el('div', { class: 'tiny dim' }, 'Optioneel: leuk voor grip en schouders, maar geen voorwaarde voor spiergroei. Staat uit zolang je geen stang hebt.'))));
   app.append(eqCard);
 
   // --- Programma ---

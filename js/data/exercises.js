@@ -1,6 +1,6 @@
 // Automatisch gegenereerd uit ExerciseLibrary.swift + aanvullingen uit trainingsrapport
-// Video's gestandaardiseerd op ScottHermanFitness waar beschikbaar (45x, oEmbed-geverifieerd 2026-08-19);
-// overige oefeningen: best beschikbare alternatief of zoek-fallback.
+// demo:true = korte 2-frame demo-animatie in assets/demos/<id>/ (bron: free-exercise-db, public domain)
+// video = optionele YouTube-uitleg (langer, met stem)
 export const EXERCISES = [
  {
   "id": "chest_barbell_bench_press",
@@ -36,7 +36,8 @@ export const EXERCISES = [
   "difficulty": 2,
   "video": "Y_7aHqXeCfQ",
   "instructions": "Lig op een vlakke bank met dumbbells. Druk omhoog, laat gecontroleerd zakken.",
-  "recoveryHours": 48
+  "recoveryHours": 48,
+  "demo": true
  },
  {
   "id": "chest_incline_barbell_press",
@@ -72,7 +73,8 @@ export const EXERCISES = [
   "difficulty": 2,
   "video": "8iPEnn-ltC8",
   "instructions": "Stel bank in op 30-45 graden. Druk dumbbells omhoog met lichte boog.",
-  "recoveryHours": 48
+  "recoveryHours": 48,
+  "demo": true
  },
  {
   "id": "chest_dumbbell_fly",
@@ -89,7 +91,8 @@ export const EXERCISES = [
   "difficulty": 2,
   "video": "eozdVDA78K0",
   "instructions": "Lig op bank, armen gestrekt boven borst. Open armen in boog, breng terug.",
-  "recoveryHours": 36
+  "recoveryHours": 36,
+  "demo": true
  },
  {
   "id": "chest_cable_crossover",
@@ -139,7 +142,8 @@ export const EXERCISES = [
   "difficulty": 1,
   "video": "wxhNoKZlfY8",
   "instructions": "Plankpositie, handen op schouderbreedte. Zak tot borst bijna grond raakt, druk omhoog.",
-  "recoveryHours": 24
+  "recoveryHours": 24,
+  "demo": true
  },
  {
   "id": "chest_dip",
@@ -210,7 +214,8 @@ export const EXERCISES = [
   "difficulty": 1,
   "video": null,
   "instructions": "Druk twee platen of handpalmen voor borst samen. Duw naar voren met constante spanning.",
-  "recoveryHours": 24
+  "recoveryHours": 24,
+  "demo": true
  },
  {
   "id": "back_barbell_row",
@@ -244,7 +249,8 @@ export const EXERCISES = [
   "difficulty": 2,
   "video": "pYcpY20QaE8",
   "instructions": "Eén hand en knie op bank. Trek dumbbell naar heup, kneep schouderblad.",
-  "recoveryHours": 36
+  "recoveryHours": 36,
+  "demo": true
  },
  {
   "id": "back_lat_pulldown",
@@ -277,7 +283,8 @@ export const EXERCISES = [
   "difficulty": 4,
   "video": "HuuyDNGrCI8",
   "instructions": "Hang aan stang met brede grip. Trek kin boven stang, gecontroleerd zakken.",
-  "recoveryHours": 48
+  "recoveryHours": 48,
+  "demo": true
  },
  {
   "id": "back_chin_up",
@@ -293,7 +300,8 @@ export const EXERCISES = [
   "difficulty": 3,
   "video": "bZ6Ysk9jf6E",
   "instructions": "Hang aan stang met onderhandse grip. Trek kin boven stang.",
-  "recoveryHours": 48
+  "recoveryHours": 48,
+  "demo": true
  },
  {
   "id": "back_seated_cable_row",
@@ -454,7 +462,8 @@ export const EXERCISES = [
   "difficulty": 2,
   "video": "qEwKCR5JCog",
   "instructions": "Zit of sta, dumbbells op schouderhoogte. Druk omhoog, laat zakken.",
-  "recoveryHours": 48
+  "recoveryHours": 48,
+  "demo": true
  },
  {
   "id": "shoulders_lateral_raise",
@@ -471,7 +480,8 @@ export const EXERCISES = [
   "recoveryHours": 24,
   "altEquipment": [
    "cableMachine"
-  ]
+  ],
+  "demo": true
  },
  {
   "id": "shoulders_front_raise",
@@ -485,7 +495,8 @@ export const EXERCISES = [
   "difficulty": 1,
   "video": "-t7fuZ0KhDA",
   "instructions": "Sta rechtop, til dumbbells naar voren op tot schouderhoogte.",
-  "recoveryHours": 24
+  "recoveryHours": 24,
+  "demo": true
  },
  {
   "id": "shoulders_reverse_fly",
@@ -504,7 +515,8 @@ export const EXERCISES = [
   "recoveryHours": 24,
   "altEquipment": [
    "cableMachine"
-  ]
+  ],
+  "demo": true
  },
  {
   "id": "shoulders_machine_press",
@@ -555,7 +567,8 @@ export const EXERCISES = [
   "difficulty": 3,
   "video": "6Z15_WdXmVw",
   "instructions": "Begin met dumbbells voor gezicht (ondergreep). Draai en druk omhoog.",
-  "recoveryHours": 48
+  "recoveryHours": 48,
+  "demo": true
  },
  {
   "id": "shoulders_cable_lateral_raise",
@@ -622,7 +635,8 @@ export const EXERCISES = [
   "difficulty": 1,
   "video": "sAq_ocpRh_I",
   "instructions": "Sta of zit, curl dumbbells omhoog. Draai handpalmen naar boven.",
-  "recoveryHours": 36
+  "recoveryHours": 36,
+  "demo": true
  },
  {
   "id": "biceps_hammer_curl",
@@ -638,7 +652,8 @@ export const EXERCISES = [
   "difficulty": 1,
   "video": "zC3nLlEvin4",
   "instructions": "Sta rechtop, dumbbells neutrale grip (duimen omhoog). Curl omhoog.",
-  "recoveryHours": 36
+  "recoveryHours": 36,
+  "demo": true
  },
  {
   "id": "biceps_preacher_curl",
@@ -685,7 +700,8 @@ export const EXERCISES = [
   "difficulty": 2,
   "video": "Jvj2wV0vOYU",
   "instructions": "Zit op bank, elleboog tegen binnenkant dij. Curl dumbbell omhoog.",
-  "recoveryHours": 36
+  "recoveryHours": 36,
+  "demo": true
  },
  {
   "id": "biceps_incline_curl",
@@ -700,7 +716,8 @@ export const EXERCISES = [
   "difficulty": 2,
   "video": "soxrZlIl35U",
   "instructions": "Lig op schuine bank (45 graden). Laat armen hangen, curl dumbbells omhoog.",
-  "recoveryHours": 36
+  "recoveryHours": 36,
+  "demo": true
  },
  {
   "id": "biceps_spider_curl",
@@ -718,7 +735,8 @@ export const EXERCISES = [
   "recoveryHours": 36,
   "altEquipment": [
    "ezBar"
-  ]
+  ],
+  "demo": true
  },
  {
   "id": "triceps_cable_pushdown",
@@ -749,7 +767,8 @@ export const EXERCISES = [
   "recoveryHours": 36,
   "altEquipment": [
    "cableMachine"
-  ]
+  ],
+  "demo": true
  },
  {
   "id": "triceps_skull_crusher",
@@ -817,7 +836,8 @@ export const EXERCISES = [
   "difficulty": 1,
   "video": "6SS6K3lAwZ8",
   "instructions": "Buig voorover, elleboog langs lichaam. Strek arm naar achteren.",
-  "recoveryHours": 24
+  "recoveryHours": 24,
+  "demo": true
  },
  {
   "id": "triceps_diamond_push_up",
@@ -834,7 +854,8 @@ export const EXERCISES = [
   "difficulty": 3,
   "video": "J0DnG1_S92I",
   "instructions": "Push-up positie, handen samen in diamantvorm. Zak langzaam, druk omhoog.",
-  "recoveryHours": 24
+  "recoveryHours": 24,
+  "demo": true
  },
  {
   "id": "triceps_cable_overhead_extension",
@@ -935,7 +956,8 @@ export const EXERCISES = [
   "recoveryHours": 48,
   "altEquipment": [
    "dumbbells"
-  ]
+  ],
+  "demo": true
  },
  {
   "id": "quads_bulgarian_split_squat",
@@ -956,7 +978,8 @@ export const EXERCISES = [
   "recoveryHours": 48,
   "altEquipment": [
    "bodyweight"
-  ]
+  ],
+  "demo": true
  },
  {
   "id": "quads_lunge",
@@ -976,7 +999,8 @@ export const EXERCISES = [
   "recoveryHours": 48,
   "altEquipment": [
    "dumbbells"
-  ]
+  ],
+  "demo": true
  },
  {
   "id": "quads_hack_squat",
@@ -1006,7 +1030,8 @@ export const EXERCISES = [
   "difficulty": 4,
   "video": "VUiFlZ2FsKA",
   "instructions": "Sta rechtop, houd iets vast voor balans. Leun achterover terwijl je knieen buigt, hak omhoog.",
-  "recoveryHours": 48
+  "recoveryHours": 48,
+  "demo": true
  },
  {
   "id": "quads_wall_sit",
@@ -1087,7 +1112,8 @@ export const EXERCISES = [
   "difficulty": 5,
   "video": null,
   "instructions": "Knielen, voeten vastgehouden. Laat lichaam langzaam naar voren vallen, rem af met hamstrings.",
-  "recoveryHours": 48
+  "recoveryHours": 48,
+  "demo": true
  },
  {
   "id": "hams_stiff_leg_deadlift",
@@ -1104,7 +1130,8 @@ export const EXERCISES = [
   "difficulty": 3,
   "video": null,
   "instructions": "Sta rechtop met dumbbells. Buig voorover met bijna gestrekte benen.",
-  "recoveryHours": 48
+  "recoveryHours": 48,
+  "demo": true
  },
  {
   "id": "hams_seated_leg_curl",
@@ -1138,7 +1165,8 @@ export const EXERCISES = [
   "recoveryHours": 48,
   "altEquipment": [
    "kettlebell"
-  ]
+  ],
+  "demo": true
  },
  {
   "id": "glutes_hip_thrust",
@@ -1190,7 +1218,8 @@ export const EXERCISES = [
   "recoveryHours": 48,
   "altEquipment": [
    "kettlebell"
-  ]
+  ],
+  "demo": true
  },
  {
   "id": "glutes_glute_bridge",
@@ -1206,7 +1235,8 @@ export const EXERCISES = [
   "difficulty": 1,
   "video": "8bbE64NuDTU",
   "instructions": "Lig op rug, knieen gebogen. Druk heupen omhoog, kneep bilspieren.",
-  "recoveryHours": 24
+  "recoveryHours": 24,
+  "demo": true
  },
  {
   "id": "glutes_step_up",
@@ -1227,7 +1257,8 @@ export const EXERCISES = [
   "altEquipment": [
    "dumbbells",
    "bodyweight"
-  ]
+  ],
+  "demo": true
  },
  {
   "id": "glutes_single_leg_hip_thrust",
@@ -1247,7 +1278,8 @@ export const EXERCISES = [
   "recoveryHours": 48,
   "altEquipment": [
    "bodyweight"
-  ]
+  ],
+  "demo": true
  },
  {
   "id": "glutes_donkey_kickback",
@@ -1266,7 +1298,8 @@ export const EXERCISES = [
   "recoveryHours": 24,
   "altEquipment": [
    "resistanceBands"
-  ]
+  ],
+  "demo": true
  },
  {
   "id": "glutes_frog_pump",
@@ -1280,7 +1313,8 @@ export const EXERCISES = [
   "difficulty": 1,
   "video": "jbJBXErKD-U",
   "instructions": "Lig op rug, voetzolen tegen elkaar (kikkerstand). Druk heupen omhoog, kneep bilspieren.",
-  "recoveryHours": 24
+  "recoveryHours": 24,
+  "demo": true
  },
  {
   "id": "core_plank",
@@ -1296,7 +1330,8 @@ export const EXERCISES = [
   "difficulty": 1,
   "video": "pSHjTRCQxIw",
   "instructions": "Op onderarmen en tenen. Houd lichaam recht, span core aan.",
-  "recoveryHours": 24
+  "recoveryHours": 24,
+  "demo": true
  },
  {
   "id": "core_cable_crunch",
@@ -1326,7 +1361,8 @@ export const EXERCISES = [
   "difficulty": 4,
   "video": "hdng3Nm1x_E",
   "instructions": "Hang aan stang, til benen omhoog tot horizontaal of hoger.",
-  "recoveryHours": 24
+  "recoveryHours": 24,
+  "demo": true
  },
  {
   "id": "core_russian_twist",
@@ -1340,7 +1376,8 @@ export const EXERCISES = [
   "difficulty": 2,
   "video": null,
   "instructions": "Zit met gebogen knieen, leun achterover. Draai torso links en rechts.",
-  "recoveryHours": 24
+  "recoveryHours": 24,
+  "demo": true
  },
  {
   "id": "core_ab_wheel",
@@ -1356,7 +1393,8 @@ export const EXERCISES = [
   "difficulty": 4,
   "video": "j6lR4u193gE",
   "instructions": "Op knieen, rol wheel naar voren tot bijna gestrekt. Trek terug met buikspieren.",
-  "recoveryHours": 36
+  "recoveryHours": 36,
+  "demo": true
  },
  {
   "id": "core_mountain_climber",
@@ -1373,7 +1411,8 @@ export const EXERCISES = [
   "difficulty": 2,
   "video": null,
   "instructions": "Plankpositie. Trek afwisselend knieen naar borst, snel tempo.",
-  "recoveryHours": 24
+  "recoveryHours": 24,
+  "demo": true
  },
  {
   "id": "core_dead_bug",
@@ -1387,7 +1426,8 @@ export const EXERCISES = [
   "difficulty": 1,
   "video": null,
   "instructions": "Lig op rug, armen omhoog, knieen 90 graden. Strek tegenovergestelde arm en been uit.",
-  "recoveryHours": 24
+  "recoveryHours": 24,
+  "demo": true
  },
  {
   "id": "core_pallof_press",
@@ -1420,7 +1460,8 @@ export const EXERCISES = [
   "difficulty": 2,
   "video": "1we3bh9uhqY",
   "instructions": "Lig op rug, handen achter hoofd. Breng elleboog naar tegenovergestelde knie afwisselend.",
-  "recoveryHours": 24
+  "recoveryHours": 24,
+  "demo": true
  },
  {
   "id": "core_side_plank",
@@ -1436,7 +1477,8 @@ export const EXERCISES = [
   "difficulty": 2,
   "video": "XeN4pEZZJNI",
   "instructions": "Lig op zij, steun op onderarm. Hef heupen op, houd lichaam in rechte lijn.",
-  "recoveryHours": 24
+  "recoveryHours": 24,
+  "demo": true
  },
  {
   "id": "core_cable_woodchop",
@@ -1488,7 +1530,8 @@ export const EXERCISES = [
   "difficulty": 2,
   "video": "YSxHifyI6s8",
   "instructions": "Sta breed, swing kettlebell tussen benen. Drijf heupen, swing tot schouderhoogte.",
-  "recoveryHours": 36
+  "recoveryHours": 36,
+  "demo": true
  },
  {
   "id": "full_burpee",
@@ -1544,7 +1587,8 @@ export const EXERCISES = [
   "difficulty": 4,
   "video": null,
   "instructions": "Lig op rug met kettlebell boven. Sta op in gecontroleerde stappen.",
-  "recoveryHours": 36
+  "recoveryHours": 36,
+  "demo": true
  },
  {
   "id": "full_man_maker",
@@ -1599,7 +1643,8 @@ export const EXERCISES = [
   "difficulty": 3,
   "video": null,
   "instructions": "Pak touwen vast, lichte squat. Maak afwisselende golven met armen, houd tempo hoog.",
-  "recoveryHours": 36
+  "recoveryHours": 36,
+  "demo": true
  },
  {
   "id": "calves_standing_raise",
@@ -1630,7 +1675,8 @@ export const EXERCISES = [
   "difficulty": 1,
   "video": null,
   "instructions": "Zit met gewicht op knieen. Druk omhoog op tenen.",
-  "recoveryHours": 24
+  "recoveryHours": 24,
+  "demo": true
  },
  {
   "id": "calves_donkey_raise",
@@ -1644,7 +1690,8 @@ export const EXERCISES = [
   "difficulty": 2,
   "video": null,
   "instructions": "Buig voorover met handen op steun. Druk omhoog op tenen vanuit gebogen positie.",
-  "recoveryHours": 24
+  "recoveryHours": 24,
+  "demo": true
  },
  {
   "id": "calves_single_leg_raise",
@@ -1661,7 +1708,8 @@ export const EXERCISES = [
   "recoveryHours": 24,
   "altEquipment": [
    "dumbbells"
-  ]
+  ],
+  "demo": true
  },
  {
   "id": "calves_jump_rope",
@@ -1733,7 +1781,8 @@ export const EXERCISES = [
   "recoveryHours": 36,
   "altEquipment": [
    "kettlebell"
-  ]
+  ],
+  "demo": true
  },
  {
   "id": "forearms_dead_hang",
@@ -1750,7 +1799,8 @@ export const EXERCISES = [
   "difficulty": 2,
   "video": "OT-wTpxP9uo",
   "instructions": "Hang aan een stang met gestrekte armen. Houd zo lang mogelijk vast.",
-  "recoveryHours": 24
+  "recoveryHours": 24,
+  "demo": true
  },
  {
   "id": "chest_banded_push_up",
@@ -1818,7 +1868,8 @@ export const EXERCISES = [
   "difficulty": 1,
   "video": "2fmxGGtdbog",
   "instructions": "Houd de band gestrekt voor je op schouderhoogte. Trek de band uit elkaar tot hij je borst raakt, knijp je schouderbladen samen. Perfect voor houding en gezonde schouders.",
-  "recoveryHours": 24
+  "recoveryHours": 24,
+  "demo": true
  },
  {
   "id": "biceps_band_curl",
@@ -1848,7 +1899,8 @@ export const EXERCISES = [
   "difficulty": 1,
   "video": "Xyd_fa5zoEU",
   "instructions": "Lig op je rug, knieën gebogen. Rol je schouderbladen van de vloer richting je bekken, adem uit bovenin, laat langzaam zakken. Focus op je rechte buikspier, trek niet aan je nek.",
-  "recoveryHours": 24
+  "recoveryHours": 24,
+  "demo": true
  },
  {
   "id": "core_lying_leg_raise",
@@ -1862,7 +1914,8 @@ export const EXERCISES = [
   "difficulty": 2,
   "video": "JB2oyawG9KI",
   "instructions": "Lig op je rug, handen onder je billen. Hef gestrekte benen tot 90 graden en laat langzaam zakken zonder dat je onderrug loskomt van de mat.",
-  "recoveryHours": 24
+  "recoveryHours": 24,
+  "demo": true
  },
  {
   "id": "core_dead_bug",
@@ -1876,7 +1929,8 @@ export const EXERCISES = [
   "difficulty": 1,
   "video": "g_BYB0R-4Ws",
   "instructions": "Lig op je rug, armen omhoog, knieën 90 graden. Strek langzaam tegengestelde arm en been terwijl je onderrug op de mat blijft. Wissel af.",
-  "recoveryHours": 12
+  "recoveryHours": 12,
+  "demo": true
  },
  {
   "id": "mobility_worlds_greatest",
@@ -1904,7 +1958,8 @@ export const EXERCISES = [
   "difficulty": 1,
   "video": "-rsIS-wl-ig",
   "instructions": "Kniel met één knie op de mat, andere voet voor je. Span je bil aan en duw je heup naar voren. 45-60 sec per kant. Tegengif voor een dag zitten.",
-  "recoveryHours": 0
+  "recoveryHours": 0,
+  "demo": true
  }
 ];
 
