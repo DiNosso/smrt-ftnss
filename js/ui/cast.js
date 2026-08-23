@@ -2,7 +2,7 @@
 // Bedoeld om te spiegelen naar de TV (AirPlay-schermsynchronisatie of Chromecast "scherm casten"):
 // je cast één keer en de hele training loopt daarna vanzelf mee.
 
-import { el, fmtTime, demoBlock } from './common.js';
+import { el, fmtTime, visualBlock } from './common.js';
 
 export function openTV(getState, { onClose } = {}) {
   const view = el('div', { class: 'tv' });
@@ -40,7 +40,7 @@ export function openTV(getState, { onClose } = {}) {
 
     main.innerHTML = '';
     const vid = el('div', { class: 'tvvid' });
-    const demo = st.exercise ? demoBlock(st.exercise, { tag: '' }) : null;
+    const demo = st.exercise ? visualBlock(st.exercise, { tag: '' }) : null;
     if (demo) { demo.classList.remove('demo'); vid.append(...demo.childNodes); }
     else if (st.exercise?.video) {
       vid.append(el('img', { class: 'on', src: `https://i.ytimg.com/vi/${st.exercise.video}/hqdefault.jpg`, alt: '' }));

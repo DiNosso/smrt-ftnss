@@ -133,6 +133,19 @@ export function plannedOn(iso) {
   return [...manual, ...fromIcu];
 }
 
+/**
+ * Splitst de geplande sporten van een dag in wat er nog moet gebeuren en wat
+ * al gedaan is. Zonder dit staat "Fietsen" zowel bij 'al gesport' als bij
+ * 'nog gepland' zodra intervals.icu de rit binnenhaalt.
+ */
+export function plannedSplitOn(iso, cache = get().icuCache) {
+  const plan = plannedOn(iso);
+  const doneTypes = new Set(icu.doneSportsOn(cache, iso).map(d => d.type));
+  const remaining = [], done = [];
+  for (const p of plan) (doneTypes.has(icu.normType(p.type)) ? done : remaining).push(p);
+  return { remaining, done };
+}
+
 function plannedSummary(iso) {
   const p = plannedOn(iso);
   return {
@@ -493,13 +506,16 @@ export function readinessSignals(iso, cache) {
       yday.hard ? 'Stevige belasting: vandaag iets lichter.' : 'Lichte belasting, geen probleem.');
   }
   const today = icu.loadSummary(cache, iso);
+  const split = plannedSplitOn(iso, cache);
   if (today.count) {
-    add('Vandaag al gesport', `${today.names.join(', ')} · load ${today.load}`, today.hard ? 'warn' : 'good', '');
+    add('Vandaag al gesport', `${today.names.join(', ')} · load ${today.load}`, today.hard ? 'warn' : 'good',
+      split.done.length
+        ? `Stond ingepland en is afgevinkt: ${split.done.map(p => icu.TYPE_NL[p.type] || p.type).join(', ')}.`
+        : '');
   }
-  const plan = plannedOn(iso);
-  if (plan.length) {
-    add('Nog gepland vandaag', plan.map(p => `${icu.TYPE_NL[p.type] || p.type}${p.hard ? ' (stevig)' : ''}`).join(', '),
-      plan.some(p => p.hard) ? 'warn' : 'good', 'De planner zet je krachtsessie hieromheen.');
+  if (split.remaining.length) {
+    add('Nog gepland vandaag', split.remaining.map(p => `${icu.TYPE_NL[p.type] || p.type}${p.hard ? ' (stevig)' : ''}`).join(', '),
+      split.remaining.some(p => p.hard) ? 'warn' : 'good', 'De planner zet je krachtsessie hieromheen.');
   }
 
   // programma

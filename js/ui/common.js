@@ -93,6 +93,33 @@ export function fmtTime(sec) {
    v2.5 — rijkere UI-componenten
    ============================================================ */
 
+/** Echte video-loop (6 sec, lokaal, geen reclame, geen netwerk). Beste optie. */
+export function clipBlock(exercise, { tag = 'Demo' } = {}) {
+  if (!exercise?.clip) return null;
+  const box = el('div', { class: 'demo clip' });
+  const v = el('video', {
+    src: `assets/clips/${exercise.id}.mp4`,
+    autoplay: true, loop: true, muted: true, playsinline: true, preload: 'metadata',
+  });
+  v.muted = true; // iOS vereist dit als property, niet alleen als attribuut
+  box.append(v, tag ? el('span', { class: 'tag' }, tag) : null);
+  // Kan de browser de clip niet afspelen (codec, offline, kapot bestand)?
+  // Dan stilletjes terugvallen op de 2-frame demo in plaats van een leeg vak.
+  v.addEventListener('error', () => {
+    const fb = demoBlock(exercise, { tag });
+    if (fb && box.parentNode) box.replaceWith(fb);
+    else box.classList.add('clip-failed');
+  }, { once: true });
+  // Autoplay kan geweigerd worden; probeer het expliciet nog een keer.
+  v.addEventListener('canplay', () => { v.play?.().catch(() => {}); }, { once: true });
+  return box;
+}
+
+/** Beste beschikbare visual: echte clip > 2-frame demo > niets. */
+export function visualBlock(exercise, opts) {
+  return clipBlock(exercise, opts) || demoBlock(exercise, opts);
+}
+
 /** Korte demo-animatie (2 frames, lokaal, geen reclame). Valt terug op YouTube-thumb. */
 export function demoBlock(exercise, { tag = 'Demo' } = {}) {
   if (!exercise?.demo) return null;
@@ -153,8 +180,16 @@ export function weekStrip(days) {
   return el('div', { class: 'weekstrip' }, days.map(d => {
     const bar = el('div', { class: 'bar ' + (d.state || ''), style: 'height:5px' });
     requestAnimationFrame(() => { bar.style.height = Math.max(6, Math.min(100, d.pct)) + '%'; });
+    // Sporten van die dag: icoon per sport, fel = stevig, gedimd = licht.
+    const sports = (d.sports || []).length
+      ? el('div', { class: 'sp' }, (d.sports || []).slice(0, 3).map(sp =>
+          el('span', {
+            class: 'spi' + (sp.hard ? ' hard' : '') + (sp.planned ? ' planned' : ''),
+            title: `${sp.nl}${sp.load ? ` · load ${sp.load}` : ''}${sp.planned ? ' (gepland)' : ''}`,
+          }, sp.icon)))
+      : el('div', { class: 'sp' });
     const col = el('div', { class: 'col' + (d.today ? ' today' : '') + (d.onClick ? ' tappable' : '') },
-      bar, el('span', { class: 'dl' }, d.label));
+      bar, sports, el('span', { class: 'dl' }, d.label));
     if (d.onClick) col.addEventListener('click', d.onClick);
     return col;
   }));

@@ -1,6 +1,7 @@
 // Automatisch gegenereerd uit ExerciseLibrary.swift + aanvullingen uit trainingsrapport
-// demo:true = korte 2-frame demo-animatie in assets/demos/<id>/ (bron: free-exercise-db)
-// video = YouTube-uitleg; videoSrc:'bb' = korte clip uit de Bodybuilding.com exercise-database
+// clip:true  = echte video-loop (6 s, MP4) in assets/clips/<id>.mp4 — hoogste kwaliteit
+// demo:true  = 2-frame demo-animatie in assets/demos/<id>/ (terugval)
+// video      = YouTube-uitleg; videoSrc:'bb' = korte clip uit de Bodybuilding.com-database
 export const EXERCISES = [
  {
   "id": "chest_barbell_bench_press",
@@ -254,7 +255,8 @@ export const EXERCISES = [
   "instructions": "Eén hand en knie op bank. Trek dumbbell naar heup, kneep schouderblad.",
   "recoveryHours": 36,
   "demo": true,
-  "videoSrc": "bb"
+  "videoSrc": "bb",
+  "clip": true
  },
  {
   "id": "back_lat_pulldown",
@@ -486,7 +488,8 @@ export const EXERCISES = [
    "cableMachine"
   ],
   "demo": true,
-  "videoSrc": "bb"
+  "videoSrc": "bb",
+  "clip": true
  },
  {
   "id": "shoulders_front_raise",
@@ -660,7 +663,8 @@ export const EXERCISES = [
   "instructions": "Sta rechtop, dumbbells neutrale grip (duimen omhoog). Curl omhoog.",
   "recoveryHours": 36,
   "demo": true,
-  "videoSrc": "bb"
+  "videoSrc": "bb",
+  "clip": true
  },
  {
   "id": "biceps_preacher_curl",
@@ -1245,7 +1249,8 @@ export const EXERCISES = [
   "video": "8bbE64NuDTU",
   "instructions": "Lig op rug, knieen gebogen. Druk heupen omhoog, kneep bilspieren.",
   "recoveryHours": 24,
-  "demo": true
+  "demo": true,
+  "clip": true
  },
  {
   "id": "glutes_step_up",
@@ -1540,7 +1545,8 @@ export const EXERCISES = [
   "video": "YSxHifyI6s8",
   "instructions": "Sta breed, swing kettlebell tussen benen. Drijf heupen, swing tot schouderhoogte.",
   "recoveryHours": 36,
-  "demo": true
+  "demo": true,
+  "clip": true
  },
  {
   "id": "full_burpee",

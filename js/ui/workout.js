@@ -1,7 +1,7 @@
 // Workout-player: sets + RIR loggen, rusttimer, supersets, warm-up,
 // oefening wisselen, video's, wake lock, PR-detectie, intervals.icu-push.
 
-import { el, videoBlock, demoBlock, fmtTime, toast, sheet, confetti, cardHead, explain, ICO } from './common.js';
+import { el, videoBlock, demoBlock, visualBlock, fmtTime, toast, sheet, confetti, cardHead, explain, ICO } from './common.js';
 import { get, S, update, todayISO } from '../state.js';
 import { buildWorkout, recordProgress, detectPRs, warmupFor, alternativesFor, suggestWeight, nextWeight, stepDown, lastSetCue } from '../engine.js';
 import { byId, MUSCLE_NL } from '../data/exercises.js';
@@ -181,7 +181,7 @@ export function openWorkout(session, adjust, ctx, timeCap = null) {
       `${slot.sets} sets × ${slot.reps[0]}-${slot.reps[1]} reps · rust ${fmtTime(slot.rest)}`));
 
     // korte demo-animatie direct zichtbaar (geen wachten, geen reclame)
-    const demo = demoBlock(ex);
+    const demo = visualBlock(ex);
     if (demo) card.append(demo);
 
     if (partner != null) card.append(el('div', { class: 'tiny mt', style: 'color:var(--warn)' },

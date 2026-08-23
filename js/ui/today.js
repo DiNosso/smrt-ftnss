@@ -5,7 +5,7 @@ import { get, S, update, todayISO, addDays } from '../state.js';
 import * as icu from '../icu.js';
 import {
   advise, buildWorkout, mesoInfo, muscleStatus, proteinTarget, weekStreak, adhocSession,
-  mondayOf, minutesOn, heavyTargetForWeek, weeklyVolume, VOLUME_TARGETS, plannedOn, readinessSignals,
+  mondayOf, minutesOn, heavyTargetForWeek, weeklyVolume, VOLUME_TARGETS, plannedOn, readinessSignals, plannedSplitOn,
 } from '../engine.js';
 import { DAILY_HABITS, SESSIONS } from '../data/program.js';
 import { openDayPicker } from './week.js';
@@ -41,11 +41,20 @@ export async function renderToday(app, ctx) {
     const isHeavy = dayLogs.some(l => SESSIONS[l.sessionId]?.type === 'heavy');
     if (isHeavy) heavyDone.push(d);
     const mins = minutesOn(d);
+    // Sporten van die dag: gedaan (uit intervals.icu) + wat er nog gepland staat.
+    const done = icu.doneSportsOn(get().icuCache, d);
+    const stillPlanned = (d >= iso ? plannedSplitOn(d, get().icuCache).remaining : [])
+      .map(p => ({ nl: icu.TYPE_NL[p.type] || p.type, icon: icu.TYPE_ICON[p.type] || icu.TYPE_ICON._, hard: p.hard, load: 0, planned: true }));
+    // Krachttraining uit je eigen logs telt ook mee als sport op die dag.
+    const strength = isHeavy || sets
+      ? [{ nl: 'Krachttraining', icon: icu.TYPE_ICON.WeightTraining, hard: isHeavy, load: 0 }]
+      : [];
     return {
       label: DAY_NL[i],
       pct: sets ? Math.min(100, 25 + sets * 5) : (mins >= 40 ? 22 : mins > 0 ? 12 : 6),
       state: sets ? 'done' : (d >= iso && mins > 0 ? 'planned' : ''),
       today: d === iso,
+      sports: [...strength, ...done, ...stillPlanned],
       onClick: () => openDaySheet(d, ctx),
     };
   });
@@ -302,9 +311,16 @@ function openDaySheet(iso, ctx) {
   if (acts.length) {
     box.append(el('h5', { class: 'mt' }, 'Andere sport (intervals.icu)'));
     for (const a of acts) {
+      const load = Math.round(a.icu_training_load || 0);
+      const min = Math.round((a.moving_time || a.elapsed_time || 0) / 60);
+      const hard = load >= 70 || min >= 90;
       box.append(el('div', { class: 'spread', style: 'padding:7px 0;border-bottom:1px solid var(--border)' },
-        el('span', {}, `${icu.TYPE_NL[a.type] || a.type} · ${a.name || ''}`.slice(0, 40)),
-        el('span', { class: 'tiny dim' }, `${Math.round((a.moving_time || 0) / 60)} min · load ${Math.round(a.icu_training_load || 0)}`)));
+        el('span', {},
+          el('span', { style: 'margin-right:6px' }, icu.TYPE_ICON[a.type] || icu.TYPE_ICON._),
+          `${icu.TYPE_NL[a.type] || a.type} · ${a.name || ''}`.slice(0, 34)),
+        el('span', { class: 'tiny' },
+          el('span', { class: 'dim' }, `${min} min · load ${load} · `),
+          el('span', { style: `color:${hard ? 'var(--accent)' : 'var(--text-faint)'}` }, hard ? 'stevig' : 'licht'))));
     }
   }
   if (ci) {

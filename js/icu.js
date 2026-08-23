@@ -68,6 +68,36 @@ export function activitiesOn(cache, iso) {
   return acts.filter(a => (a.start_date_local || '').slice(0, 10) === iso);
 }
 
+/** Ride en VirtualRide (of Run en TrailRun) zijn hetzelfde bij het matchen van plan vs. gedaan. */
+export function normType(t) {
+  const s = String(t || '');
+  if (s.includes('Ride')) return 'Ride';
+  if (s.includes('Run')) return 'Run';
+  return s;
+}
+
+/** Sporten die je op een dag daadwerkelijk deed, samengevat per type (voor de weekstrip). */
+export function doneSportsOn(cache, iso) {
+  const byType = new Map();
+  for (const a of activitiesOn(cache, iso)) {
+    const t = normType(a.type);
+    const cur = byType.get(t) || { type: t, load: 0, seconds: 0, count: 0 };
+    cur.load += a.icu_training_load || 0;
+    cur.seconds += a.moving_time || a.elapsed_time || 0;
+    cur.count += 1;
+    byType.set(t, cur);
+  }
+  return [...byType.values()].map(x => ({
+    type: x.type,
+    nl: TYPE_NL[x.type] || x.type,
+    icon: TYPE_ICON[x.type] || TYPE_ICON._,
+    load: Math.round(x.load),
+    minutes: Math.round(x.seconds / 60),
+    count: x.count,
+    hard: x.load >= 70 || x.seconds >= 5400,
+  }));
+}
+
 /** Was gisteren (of vandaag al) een zware sessie? Geeft {hard, load, names, legHeavy} terug. */
 export function loadSummary(cache, iso) {
   const acts = activitiesOn(cache, iso);
@@ -188,6 +218,13 @@ export async function deleteActivity(activityId) {
   await fetch(`${BASE}/activity/${activityId}`, { method: 'DELETE', headers: { Authorization: auth } }).catch(() => {});
   update(s => { s.icuCache = null; });
 }
+
+export const TYPE_ICON = {
+  Ride: '\u{1F6B4}', VirtualRide: '\u{1F6B4}', Run: '\u{1F3C3}', TrailRun: '\u{1F3C3}',
+  Swim: '\u{1F3CA}', Padel: '\u{1F3BE}', Tennis: '\u{1F3BE}', WeightTraining: '\u{1F3CB}',
+  Walk: '\u{1F6B6}', Hike: '\u{1F97E}', Yoga: '\u{1F9D8}', Workout: '\u26A1', Rowing: '\u{1F6A3}',
+  _: '\u25CF',
+};
 
 export const TYPE_NL = {
   Ride: 'Fietsen', VirtualRide: 'Fietsen (indoor)', Run: 'Hardlopen', Swim: 'Zwemmen',

@@ -392,7 +392,7 @@ hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
 .statrow .l { font-size: .6rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--text-faint); margin-top: 3px; }
 
 /* Weekstrip */
-.weekstrip { display: flex; gap: 6px; align-items: flex-end; height: 64px; }
+.weekstrip { display: flex; gap: 6px; align-items: flex-end; height: 78px; }
 .weekstrip .col.tappable { cursor: pointer; }
 .weekstrip .col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; height: 100%; justify-content: flex-end; }
 .weekstrip .bar {
@@ -404,6 +404,11 @@ hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
 .weekstrip .col.today .bar { outline: 1.5px solid var(--accent); outline-offset: 1px; }
 .weekstrip .dl { font-size: .58rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--text-faint); }
 .weekstrip .col.today .dl { color: var(--accent); }
+/* Sport-iconen onder de balk: fel = stevige inspanning, gedimd = licht */
+.weekstrip .sp { display: flex; gap: 1px; justify-content: center; align-items: center; height: 11px; line-height: 1; }
+.weekstrip .spi { font-size: .55rem; line-height: 1; opacity: .5; filter: grayscale(1); }
+.weekstrip .spi.hard { opacity: 1; filter: none; }
+.weekstrip .spi.planned { opacity: .28; }
 
 /* Spierkaart (silhouet) */
 .bodymap { display: flex; gap: 10px; justify-content: center; align-items: center; }
@@ -440,6 +445,11 @@ details.explain > summary::after { content: '⌄'; margin-left: auto; transition
 details.explain[open] > summary::after { transform: rotate(180deg); }
 details.explain .body { font-size: .8rem; line-height: 1.5; color: var(--text-dim); padding-top: 8px; }
 details.explain.solo { border-top: none; margin-top: 0; padding-top: 0; }
+
+/* Echte video-loop */
+.demo.clip video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #0a0f0e; }
+.demo.clip-failed { display: none; }
+.tv .tvvid video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
 
 /* Demo-animatie (2 frames) */
 .demo { position: relative; width: 100%; aspect-ratio: 3/2; border-radius: var(--radius-sm); overflow: hidden; background: #000; }
