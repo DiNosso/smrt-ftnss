@@ -1,5 +1,5 @@
 // Service worker: offline-first voor app-bestanden, netwerk voor API's
-const CACHE = 'fait-v15';
+const CACHE = 'fait-v16';
 const ASSETS = [
   './', 'index.html', 'css/style.css', 'manifest.webmanifest',
   'js/app.js', 'js/state.js', 'js/icu.js', 'js/engine.js',
@@ -21,18 +21,52 @@ self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
 
+// Code (HTML/JS/CSS) → netwerk eerst, zodat een nieuwe versie meteen zichtbaar is.
+// Media (fonts, iconen, demo's, clips) → cache eerst, want die moeten snel zijn
+// en veranderen zelden. In beide gevallen is de cache het offline-vangnet.
+const CODE_RE = /\.(?:html|js|css|webmanifest)$/;
+
+function withTimeout(p, ms) {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error('timeout')), ms);
+    p.then(r => { clearTimeout(t); resolve(r); }, e => { clearTimeout(t); reject(e); });
+  });
+}
+
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
-  // API's en YouTube altijd via netwerk
-  if (url.origin !== location.origin) return;
-  // app-bestanden: cache-first, met achtergrond-update
-  e.respondWith(
-    caches.match(e.request).then(cached => {
-      const fetched = fetch(e.request).then(res => {
-        if (res.ok) caches.open(CACHE).then(c => c.put(e.request, res.clone()));
+  if (url.origin !== location.origin) return;   // API's en YouTube altijd via netwerk
+  if (e.request.method !== 'GET') return;
+
+  const isCode = e.request.mode === 'navigate' || CODE_RE.test(url.pathname);
+
+  if (isCode) {
+    e.respondWith((async () => {
+      try {
+        const res = await withTimeout(fetch(e.request), 4000);
+        if (res && res.ok) (await caches.open(CACHE)).put(e.request, res.clone());
         return res;
-      }).catch(() => cached);
-      return cached || fetched;
-    })
-  );
+      } catch {
+        return (await caches.match(e.request))
+          || (await caches.match('index.html'))
+          || new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain' } });
+      }
+    })());
+    return;
+  }
+
+  e.respondWith((async () => {
+    const cached = await caches.match(e.request);
+    if (cached) return cached;
+    try {
+      const res = await fetch(e.request);
+      if (res.ok) (await caches.open(CACHE)).put(e.request, res.clone());
+      return res;
+    } catch {
+      return new Response('', { status: 504 });
+    }
+  })());
 });
+
+// De app kan vragen om direct over te schakelen op een nieuwe versie.
+self.addEventListener('message', e => { if (e.data === 'skipWaiting') self.skipWaiting(); });

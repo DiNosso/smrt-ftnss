@@ -21,7 +21,34 @@
   <script type="module" src="js/app.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
-      addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
+      // Stond de app al onder beheer van een service worker? Zo ja, dan is een
+      // wisseling van worker een nieuwe versie en verversen we eenmalig.
+      var hadController = !!navigator.serviceWorker.controller;
+      var reloading = false;
+      navigator.serviceWorker.addEventListener('controllerchange', function () {
+        if (!hadController || reloading) return;   // eerste installatie: niets te verversen
+        reloading = true;
+        location.reload();
+      });
+      addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js').then(function (reg) {
+          reg.update();
+          // iOS controleert uit zichzelf nauwelijks op updates. Doe het daarom
+          // elke keer dat de app weer op de voorgrond komt.
+          document.addEventListener('visibilitychange', function () {
+            if (!document.hidden) reg.update();
+          });
+          // Staat er al een nieuwe versie te wachten? Laat 'm meteen overnemen.
+          if (reg.waiting) reg.waiting.postMessage('skipWaiting');
+          reg.addEventListener('updatefound', function () {
+            var nw = reg.installing;
+            if (!nw) return;
+            nw.addEventListener('statechange', function () {
+              if (nw.state === 'installed' && reg.waiting) reg.waiting.postMessage('skipWaiting');
+            });
+          });
+        });
+      });
     }
   </script>
 </body>

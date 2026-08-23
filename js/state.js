@@ -1,7 +1,7 @@
 // Eenvoudige localStorage-state. Alles lokaal, niets verlaat je toestel
 // behalve directe calls naar intervals.icu en YouTube.
 
-export const VERSION = '2.6.1';
+export const VERSION = '2.6.2';
 
 const KEY = 'fait.v1';
 

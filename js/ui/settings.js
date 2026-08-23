@@ -140,7 +140,36 @@ export function renderSettings(app, ctx) {
         if (confirm('Alle logs en instellingen wissen?')) { localStorage.clear(); location.reload(); }
       } }, 'Alles wissen'))));
 
+  // Noodknop: gooit alleen de app-cache weg, je logs en instellingen blijven staan.
+  app.append(el('div', { class: 'card' },
+    cardHead('Versie', ICO.bolt),
+    el('div', { class: 'spread' },
+      el('span', {}, `SMRT.FTNSS v${VERSION}`),
+      el('button', { class: 'btn-sm', onclick: () => forceUpdate() }, '↻ Update ophalen')),
+    explain('Werkt de app niet bij?',
+      'Deze knop gooit alleen de opgeslagen app-bestanden weg en haalt de nieuwste versie op. '
+      + 'Je trainingslogs, instellingen en koppelingen blijven gewoon staan — die zitten los van de cache.')));
+
   app.append(el('p', { class: 'center tiny dim' }, `SMRT.FTNSS v${VERSION} · persoonlijke trainingsapp · gebouwd op je eigen trainingsrapport`));
+}
+
+/** Cache en service worker opruimen en opnieuw laden. Raakt je data niet aan. */
+async function forceUpdate() {
+  toast('Nieuwste versie ophalen…');
+  try {
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+    if (navigator.serviceWorker) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister()));
+    }
+  } catch (e) {
+    console.warn('cache opruimen mislukt', e);
+  }
+  // Cache-buster zodat ook de browser zelf een verse kopie pakt.
+  location.replace(location.pathname + '?u=' + Date.now());
 }
 
 function backupHint() {
