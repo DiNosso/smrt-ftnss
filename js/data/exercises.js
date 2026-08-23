@@ -1,6 +1,6 @@
 // Automatisch gegenereerd uit ExerciseLibrary.swift + aanvullingen uit trainingsrapport
-// demo:true = korte 2-frame demo-animatie in assets/demos/<id>/ (bron: free-exercise-db, public domain)
-// video = optionele YouTube-uitleg (langer, met stem)
+// demo:true = korte 2-frame demo-animatie in assets/demos/<id>/ (bron: free-exercise-db)
+// video = YouTube-uitleg; videoSrc:'bb' = korte clip uit de Bodybuilding.com exercise-database
 export const EXERCISES = [
  {
   "id": "chest_barbell_bench_press",
@@ -34,10 +34,11 @@ export const EXERCISES = [
    "bench"
   ],
   "difficulty": 2,
-  "video": "Y_7aHqXeCfQ",
+  "video": "Vc63DPUoA40",
   "instructions": "Lig op een vlakke bank met dumbbells. Druk omhoog, laat gecontroleerd zakken.",
   "recoveryHours": 48,
-  "demo": true
+  "demo": true,
+  "videoSrc": "bb"
  },
  {
   "id": "chest_incline_barbell_press",
@@ -71,10 +72,11 @@ export const EXERCISES = [
    "inclineBench"
   ],
   "difficulty": 2,
-  "video": "8iPEnn-ltC8",
+  "video": "DnV3R4vp3K0",
   "instructions": "Stel bank in op 30-45 graden. Druk dumbbells omhoog met lichte boog.",
   "recoveryHours": 48,
-  "demo": true
+  "demo": true,
+  "videoSrc": "bb"
  },
  {
   "id": "chest_dumbbell_fly",
@@ -89,10 +91,11 @@ export const EXERCISES = [
    "bench"
   ],
   "difficulty": 2,
-  "video": "eozdVDA78K0",
+  "video": "QwuUZ5wgQOk",
   "instructions": "Lig op bank, armen gestrekt boven borst. Open armen in boog, breng terug.",
   "recoveryHours": 36,
-  "demo": true
+  "demo": true,
+  "videoSrc": "bb"
  },
  {
   "id": "chest_cable_crossover",
@@ -247,10 +250,11 @@ export const EXERCISES = [
    "bench"
   ],
   "difficulty": 2,
-  "video": "pYcpY20QaE8",
+  "video": "PgpQ4-jHiq4",
   "instructions": "Eén hand en knie op bank. Trek dumbbell naar heup, kneep schouderblad.",
   "recoveryHours": 36,
-  "demo": true
+  "demo": true,
+  "videoSrc": "bb"
  },
  {
   "id": "back_lat_pulldown",
@@ -475,13 +479,14 @@ export const EXERCISES = [
    "dumbbells"
   ],
   "difficulty": 1,
-  "video": "3VcKaXpzqRo",
+  "video": "LT1Eo-q58yg",
   "instructions": "Sta rechtop, dumbbells langs lichaam. Til zijwaarts op tot schouderhoogte.",
   "recoveryHours": 24,
   "altEquipment": [
    "cableMachine"
   ],
-  "demo": true
+  "demo": true,
+  "videoSrc": "bb"
  },
  {
   "id": "shoulders_front_raise",
@@ -565,10 +570,11 @@ export const EXERCISES = [
    "dumbbells"
   ],
   "difficulty": 3,
-  "video": "6Z15_WdXmVw",
+  "video": "X60-yTMOJfw",
   "instructions": "Begin met dumbbells voor gezicht (ondergreep). Draai en druk omhoog.",
   "recoveryHours": 48,
-  "demo": true
+  "demo": true,
+  "videoSrc": "bb"
  },
  {
   "id": "shoulders_cable_lateral_raise",
@@ -650,10 +656,11 @@ export const EXERCISES = [
    "dumbbells"
   ],
   "difficulty": 1,
-  "video": "zC3nLlEvin4",
+  "video": "0IAM2YtviQY",
   "instructions": "Sta rechtop, dumbbells neutrale grip (duimen omhoog). Curl omhoog.",
   "recoveryHours": 36,
-  "demo": true
+  "demo": true,
+  "videoSrc": "bb"
  },
  {
   "id": "biceps_preacher_curl",
@@ -698,10 +705,11 @@ export const EXERCISES = [
    "dumbbells"
   ],
   "difficulty": 2,
-  "video": "Jvj2wV0vOYU",
+  "video": "ZcU2hN76UyA",
   "instructions": "Zit op bank, elleboog tegen binnenkant dij. Curl dumbbell omhoog.",
   "recoveryHours": 36,
-  "demo": true
+  "demo": true,
+  "videoSrc": "bb"
  },
  {
   "id": "biceps_incline_curl",
@@ -762,13 +770,14 @@ export const EXERCISES = [
    "dumbbells"
   ],
   "difficulty": 2,
-  "video": "-Vyt2QdsR7E",
+  "video": "ntBjdnckWgo",
   "instructions": "Houd dumbbell boven hoofd met beide handen. Zak achter hoofd, druk omhoog.",
   "recoveryHours": 36,
   "altEquipment": [
    "cableMachine"
   ],
-  "demo": true
+  "demo": true,
+  "videoSrc": "bb"
  },
  {
   "id": "triceps_skull_crusher",

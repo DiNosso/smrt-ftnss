@@ -59,7 +59,8 @@ function openDetail(ex) {
     el('div', { class: 'mt' }, ex.equipment.map(q => el('span', { class: 'pill' }, EQUIPMENT_NL[q] || q))),
     demoBlock(ex) || videoBlock(ex),
     el('p', { class: 'tiny mt' }, ex.instructions),
-    ex.demo && ex.video ? el('a', { class: 'btn btn-sm btn-ghost', style: 'text-decoration:none', href: `https://www.youtube.com/watch?v=${ex.video}`, target: '_blank', rel: 'noopener' }, '▶ Uitgebreide video ↗') : null,
+    ex.video ? el('a', { class: 'btn btn-sm btn-ghost', style: 'text-decoration:none', href: `https://www.youtube.com/watch?v=${ex.video}`, target: '_blank', rel: 'noopener' },
+      ex.videoSrc === 'bb' ? '▶ Korte clip (Bodybuilding.com) ↗' : '▶ Uitgebreide video ↗') : null,
     ex.tips ? el('p', { class: 'tiny', style: 'color:var(--primary)' }, '💡 ' + ex.tips) : null,
     el('div', { class: 'tiny dim' }, `Moeilijkheid: ${'●'.repeat(ex.difficulty || 1)}${'○'.repeat(5 - (ex.difficulty || 1))} · herstel ±${ex.recoveryHours} uur`));
   if (exerciseHistory(ex.id).length) {

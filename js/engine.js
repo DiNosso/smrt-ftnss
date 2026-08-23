@@ -434,6 +434,83 @@ export function advise(iso, cache) {
   return { session, base, level, reasons, adjust, deload, form, meso, plannerReason: planned.reason };
 }
 
+/**
+ * Gestructureerde onderbouwing van de readiness-score: elk signaal met zijn
+ * waarde en of het meetelde. Voor het "waar is dit op gebaseerd?"-scherm.
+ */
+export function readinessSignals(iso, cache) {
+  const out = [];
+  const add = (label, value, state, note) => out.push({ label, value, state, note });
+
+  // intervals.icu
+  const form = icu.form(cache);
+  add('Vorm (fitness − vermoeidheid)',
+    form == null ? 'geen data' : (form > 0 ? '+' + form : String(form)),
+    form == null ? 'none' : form <= -25 ? 'bad' : form <= -12 ? 'warn' : 'good',
+    form == null ? 'Koppel intervals.icu om dit mee te laten wegen.' : 'Onder −12 traint de app lichter, onder −25 rust.');
+
+  const sleep = icu.sleepHours(cache, iso);
+  const ci = get().checkins?.[iso];
+  if (sleep != null) {
+    add('Slaap afgelopen nacht', `${sleep.toFixed(1)} uur`,
+      sleep < 5.5 ? 'bad' : sleep < 7 ? 'warn' : 'good',
+      'Onder 7 uur verschuift herstel volgens je rapport van vet naar spier.');
+  } else if (ci?.sleepScore != null) {
+    add('Slaap (check-in)', `${ci.sleepScore}/5`, ci.sleepScore <= 2 ? 'warn' : 'good', 'Uit je eigen check-in — intervals.icu had geen slaapdata.');
+  } else {
+    add('Slaap', 'geen data', 'none', 'Vul de check-in in of koppel een slaaptracker aan intervals.icu.');
+  }
+
+  const rhr = icu.todayVsAvg7(cache, 'restingHR', iso);
+  if (rhr?.today != null && rhr.avg != null) {
+    const hi = rhr.today >= rhr.avg + 5;
+    add('Rusthartslag', `${Math.round(rhr.today)} (gem. ${Math.round(rhr.avg)})`, hi ? 'warn' : 'good',
+      hi ? 'Meer dan 5 slagen boven je gemiddelde: je herstelt nog.' : 'In lijn met je gemiddelde.');
+  }
+  const hrv = icu.todayVsAvg7(cache, 'hrv', iso);
+  if (hrv?.today != null && hrv.avg != null) {
+    const low = hrv.today <= hrv.avg * 0.8;
+    add('HRV', `${Math.round(hrv.today)} (gem. ${Math.round(hrv.avg)})`, low ? 'warn' : 'good',
+      low ? 'Ruim onder je gemiddelde — teken van stress of onvoldoende herstel.' : 'Normaal niveau.');
+  }
+
+  // eigen invoer
+  const tired = get().tired[iso];
+  add('Hoe jij je voelt', tired === 'kapot' ? 'kapot' : tired === 'moe' ? 'beetje moe' : (ci?.motivation != null ? `motivatie ${ci.motivation}/5` : 'niets gemeld'),
+    tired === 'kapot' ? 'bad' : (tired === 'moe' || (ci?.motivation ?? 5) <= 2) ? 'warn' : 'good',
+    'Jouw eigen inschatting weegt altijd het zwaarst.');
+
+  const sore = Object.entries(ci?.soreness || {}).filter(([, v]) => v);
+  if (sore.length) {
+    add('Spierpijn', sore.map(([m, v]) => `${m}${v === 2 ? ' (fors)' : ''}`).join(', '), 'warn',
+      'Overschrijft de theoretische herstelklok: die spieren worden overgeslagen.');
+  }
+
+  // belasting
+  const yday = icu.loadSummary(cache, addDays(iso, -1));
+  if (yday.count) {
+    add('Gisteren gesport', `${yday.names.join(', ')} · load ${yday.load}`, yday.hard ? 'warn' : 'good',
+      yday.hard ? 'Stevige belasting: vandaag iets lichter.' : 'Lichte belasting, geen probleem.');
+  }
+  const today = icu.loadSummary(cache, iso);
+  if (today.count) {
+    add('Vandaag al gesport', `${today.names.join(', ')} · load ${today.load}`, today.hard ? 'warn' : 'good', '');
+  }
+  const plan = plannedOn(iso);
+  if (plan.length) {
+    add('Nog gepland vandaag', plan.map(p => `${icu.TYPE_NL[p.type] || p.type}${p.hard ? ' (stevig)' : ''}`).join(', '),
+      plan.some(p => p.hard) ? 'warn' : 'good', 'De planner zet je krachtsessie hieromheen.');
+  }
+
+  // programma
+  const meso = mesoInfo(iso);
+  add('Plek in het blok', meso.isDeload ? 'Deloadweek' : `Blokweek ${meso.pos + 1} van 4`, meso.isDeload ? 'warn' : 'good', meso.label);
+  add('Beschikbare tijd vandaag', minutesOn(iso) ? `${minutesOn(iso)} min` : 'geen tijd ingepland',
+    minutesOn(iso) === 0 ? 'bad' : minutesOn(iso) >= 40 ? 'good' : 'warn', 'Aan te passen in Instellingen.');
+
+  return out;
+}
+
 /** Werk de sessie-slots uit incl. aanpassingen, tijdlimiet en gewichtssuggesties. */
 export function buildWorkout(session, adjust = { setFactor: 1, rirBonus: 0, restBonus: 0 }, timeCapMin = null) {
   let built = session.slots.map(slot => {

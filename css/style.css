@@ -393,6 +393,7 @@ hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
 
 /* Weekstrip */
 .weekstrip { display: flex; gap: 6px; align-items: flex-end; height: 64px; }
+.weekstrip .col.tappable { cursor: pointer; }
 .weekstrip .col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; height: 100%; justify-content: flex-end; }
 .weekstrip .bar {
   width: 100%; border-radius: 6px; background: rgba(255,255,255,.06);

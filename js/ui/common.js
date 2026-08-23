@@ -153,7 +153,10 @@ export function weekStrip(days) {
   return el('div', { class: 'weekstrip' }, days.map(d => {
     const bar = el('div', { class: 'bar ' + (d.state || ''), style: 'height:5px' });
     requestAnimationFrame(() => { bar.style.height = Math.max(6, Math.min(100, d.pct)) + '%'; });
-    return el('div', { class: 'col' + (d.today ? ' today' : '') }, bar, el('span', { class: 'dl' }, d.label));
+    const col = el('div', { class: 'col' + (d.today ? ' today' : '') + (d.onClick ? ' tappable' : '') },
+      bar, el('span', { class: 'dl' }, d.label));
+    if (d.onClick) col.addEventListener('click', d.onClick);
+    return col;
   }));
 }
 

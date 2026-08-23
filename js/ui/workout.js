@@ -199,7 +199,8 @@ export function openWorkout(session, adjust, ctx, timeCap = null) {
     // uitleg + wissel
     const actions = el('div', { class: 'row mt' },
       el('button', { class: 'btn-sm btn-ghost', onclick: () => openSwap(si) }, '⇄ Wissel'),
-      ex?.video ? el('a', { class: 'btn btn-sm btn-ghost', style: 'text-decoration:none', href: `https://www.youtube.com/watch?v=${ex.video}`, target: '_blank', rel: 'noopener' }, '▶ Video ↗') : null);
+      ex?.video ? el('a', { class: 'btn btn-sm btn-ghost', style: 'text-decoration:none', href: `https://www.youtube.com/watch?v=${ex.video}`, target: '_blank', rel: 'noopener' },
+        ex.videoSrc === 'bb' ? '▶ Korte clip ↗' : '▶ Video ↗') : null);
     card.append(actions);
     if (ex) card.append(explain('Uitvoering',
       el('p', { class: 'mb0' }, ex.instructions),

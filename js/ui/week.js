@@ -84,7 +84,7 @@ export function renderWeek(app, ctx) {
 }
 
 /** Dag aanpassen: andere sport plannen, kan niet (rustdag), specifieke sessie, of automatisch. */
-function openDayPicker(iso, redraw) {
+export function openDayPicker(iso, redraw) {
   const swap = get().swaps[iso];
   const box = el('div', {},
     el('h3', {}, fmtDate(iso)),

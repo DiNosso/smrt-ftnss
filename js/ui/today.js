@@ -5,9 +5,10 @@ import { get, S, update, todayISO, addDays } from '../state.js';
 import * as icu from '../icu.js';
 import {
   advise, buildWorkout, mesoInfo, muscleStatus, proteinTarget, weekStreak, adhocSession,
-  mondayOf, minutesOn, heavyTargetForWeek, weeklyVolume, VOLUME_TARGETS, plannedOn,
+  mondayOf, minutesOn, heavyTargetForWeek, weeklyVolume, VOLUME_TARGETS, plannedOn, readinessSignals,
 } from '../engine.js';
 import { DAILY_HABITS, SESSIONS } from '../data/program.js';
+import { openDayPicker } from './week.js';
 import { MUSCLE_NL, EXERCISES } from '../data/exercises.js';
 import { openWorkout } from './workout.js';
 
@@ -45,6 +46,7 @@ export async function renderToday(app, ctx) {
       pct: sets ? Math.min(100, 25 + sets * 5) : (mins >= 40 ? 22 : mins > 0 ? 12 : 6),
       state: sets ? 'done' : (d >= iso && mins > 0 ? 'planned' : ''),
       today: d === iso,
+      onClick: () => openDaySheet(d, ctx),
     };
   });
 
@@ -78,7 +80,11 @@ export async function renderToday(app, ctx) {
     // readiness-score voor de ring (100 = fris)
     const score = { go: 100, lighter: 66, easy: 40, rest: 20 }[adv.level];
     heroRing.innerHTML = '';
-    heroRing.append(ring(score, { go: 'Top', lighter: 'Oké', easy: 'Laag', rest: 'Rust' }[adv.level], 'readiness'));
+    const r = ring(score, { go: 'Top', lighter: 'Oké', easy: 'Laag', rest: 'Rust' }[adv.level], 'readiness');
+    r.style.cursor = 'pointer';
+    r.setAttribute('role', 'button');
+    r.addEventListener('click', () => openReadinessSheet(iso, cache, adv));
+    heroRing.append(r);
 
     const levelPill = {
       go: el('span', { class: 'pill good' }, 'Klaar om te trainen'),
@@ -216,12 +222,100 @@ export async function renderToday(app, ctx) {
     actBox.append(el('div', { class: 'card' },
       cardHead(ICO.heart, 'Recente activiteiten',
         el('span', { class: 'pill' }, 'intervals.icu')),
-      recent.map(a => el('div', { class: 'spread', style: 'padding:7px 0;border-bottom:1px solid var(--border)' },
-        el('span', { style: 'font-size:.9rem' }, `${icu.TYPE_NL[a.type] || a.type || '?'} · ${a.name || ''}`.slice(0, 42)),
-        el('span', { class: 'tiny dim' }, `${(a.start_date_local || '').slice(5, 10)} · ${Math.round(a.icu_training_load || 0)}`)))));
+      recent.map(a => el('div', { class: 'exrow', onclick: () => openDaySheet((a.start_date_local || '').slice(0, 10), ctx) },
+        el('div', { class: 'grow' },
+          el('div', { style: 'font-size:.9rem' }, `${icu.TYPE_NL[a.type] || a.type || '?'} · ${a.name || ''}`.slice(0, 40)),
+          el('div', { class: 'mus' }, `${(a.start_date_local || '').slice(5, 10)} · ${Math.round((a.moving_time || 0) / 60)} min · load ${Math.round(a.icu_training_load || 0)}`)),
+        el('span', { class: 'dim' }, '›')))));
   };
   drawActs(get().icuCache);
   if (icu.isConfigured()) icu.refresh().then(drawActs).catch(() => {});
+}
+
+/** "Waar is dit op gebaseerd?" — alle signalen achter de readiness-score. */
+function openReadinessSheet(iso, cache, adv) {
+  const sig = readinessSignals(iso, cache);
+  const LEVEL = {
+    go: ['Klaar om te trainen', 'Alle signalen staan op groen — pak je sessie voluit.'],
+    lighter: ['Iets lichter vandaag', 'Er zijn signalen die om ontzien vragen. De app haalt sets weg en houdt je verder van spierfalen.'],
+    easy: ['Rustig aan', 'Te veel belasting of te weinig herstel: vandaag alleen een korte sessie, de zware schuift op.'],
+    rest: ['Herstel eerst', 'Je lichaam vraagt om rust. Bewegen mag, prikkelen niet.'],
+  }[adv.level];
+
+  const box = el('div', {},
+    el('h3', {}, 'Readiness'),
+    el('div', { class: 'spread', style: 'margin-bottom:10px' },
+      el('span', { style: 'font-weight:600' }, LEVEL[0]),
+      el('span', { class: 'pill ' + ({ go: 'good', lighter: 'warn', easy: 'danger', rest: 'danger' })[adv.level] }, { go: 'Top', lighter: 'Oké', easy: 'Laag', rest: 'Rust' }[adv.level])),
+    el('p', { class: 'tiny dim' }, LEVEL[1]),
+    el('h5', { class: 'mt' }, 'Waar dit op gebaseerd is'));
+
+  const DOT = { good: 'var(--accent)', warn: 'var(--warn)', bad: 'var(--danger)', none: 'var(--text-faint)' };
+  for (const s of sig) {
+    box.append(el('div', { style: 'padding:10px 0;border-bottom:1px solid var(--border)' },
+      el('div', { class: 'spread' },
+        el('span', { class: 'row', style: 'gap:8px' },
+          el('i', { style: `width:8px;height:8px;border-radius:3px;background:${DOT[s.state]};display:inline-block;flex:none` }),
+          el('span', { style: 'font-size:.9rem;font-weight:550' }, s.label)),
+        el('span', { class: 'tiny', style: `color:${s.state === 'none' ? 'var(--text-faint)' : 'var(--text)'};text-align:right` }, s.value)),
+      s.note ? el('div', { class: 'tiny dim', style: 'margin-top:3px;padding-left:16px' }, s.note) : null));
+  }
+
+  box.append(el('h5', { class: 'mt' }, 'Wat de app hiermee doet'));
+  box.append(el('div', { class: 'tiny dim' }, adv.reasons.map(r => el('p', { class: 'mb0', style: 'margin-bottom:6px' }, '· ' + r))));
+  sheet(box);
+}
+
+/** Dagdetail: wat is er gebeurd (verleden) of wat staat er gepland (toekomst). */
+function openDaySheet(iso, ctx) {
+  const today = todayISO();
+  if (iso >= today) return openDayPicker(iso, () => ctx.render());
+
+  const logs = get().logs.filter(l => l.date === iso);
+  const acts = icu.activitiesOn(get().icuCache, iso);
+  const ci = get().checkins?.[iso];
+  const box = el('div', {}, el('h3', {}, fmtDate(iso)));
+
+  if (!logs.length && !acts.length) {
+    box.append(el('p', { class: 'dim' }, 'Deze dag is niets gelogd. Geen ramp — de wachtrij heeft je sessies vanzelf doorgeschoven.'));
+  }
+  for (const l of logs) {
+    const doneSets = l.sets.filter(s => s.done);
+    const tonnage = Math.round(doneSets.reduce((t, s) => t + (s.weight || 0) * (s.reps || 0), 0));
+    const rirs = doneSets.map(s => s.rir).filter(r => r != null);
+    box.append(el('div', { class: 'card raised' },
+      el('h4', {}, SESSIONS[l.sessionId]?.name || 'Workout'),
+      statRow([
+        { n: doneSets.length, l: 'sets' },
+        { n: Math.round(l.durationSec / 60), l: 'minuten' },
+        { n: tonnage ? (tonnage >= 1000 ? (tonnage / 1000).toFixed(1) + 'k' : tonnage) : '—', l: 'kg volume' },
+      ]),
+      rirs.length ? el('div', { class: 'tiny dim mt' }, `Gemiddelde RIR: ${(rirs.reduce((t, r) => t + r, 0) / rirs.length).toFixed(1)}${l.feel ? ` · gevoel ${l.feel}/5` : ''}`) : null,
+      l.note ? el('p', { class: 'tiny mt mb0', style: 'color:var(--primary)' }, '📝 ' + l.note) : null,
+      el('div', { class: 'mt' }, [...new Set(doneSets.map(s => s.ex))].map(exId => {
+        const ss = doneSets.filter(s => s.ex === exId);
+        return el('div', { class: 'spread', style: 'padding:5px 0;border-bottom:1px solid var(--border)' },
+          el('span', { style: 'font-size:.88rem' }, byIdName(exId)),
+          el('span', { class: 'tiny', style: 'color:var(--primary)' }, ss.map(s => `${s.reps}${s.weight ? '×' + s.weight : ''}`).join(' · ')));
+      }))));
+  }
+  if (acts.length) {
+    box.append(el('h5', { class: 'mt' }, 'Andere sport (intervals.icu)'));
+    for (const a of acts) {
+      box.append(el('div', { class: 'spread', style: 'padding:7px 0;border-bottom:1px solid var(--border)' },
+        el('span', {}, `${icu.TYPE_NL[a.type] || a.type} · ${a.name || ''}`.slice(0, 40)),
+        el('span', { class: 'tiny dim' }, `${Math.round((a.moving_time || 0) / 60)} min · load ${Math.round(a.icu_training_load || 0)}`)));
+    }
+  }
+  if (ci) {
+    box.append(el('div', { class: 'tiny dim mt' },
+      `Check-in die dag: motivatie ${ci.motivation ?? '–'}/5, slaap ${ci.sleepScore ?? '–'}/5`));
+  }
+  sheet(box);
+}
+
+function byIdName(exId) {
+  return (EXERCISES.find(e => e.id === exId) || {}).nameNL || exId;
 }
 
 /** Dagelijkse check-in: motivatie, slaap (fallback), spierpijn per spiergroep. */
