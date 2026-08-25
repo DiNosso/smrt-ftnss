@@ -112,6 +112,11 @@ export function clipBlock(exercise, { tag = 'Demo' } = {}) {
   }, { once: true });
   // Autoplay kan geweigerd worden; probeer het expliciet nog een keer.
   v.addEventListener('canplay', () => { v.play?.().catch(() => {}); }, { once: true });
+  // Geef het kader de verhouding van de clip zelf. De clips zijn staand (9:16);
+  // zonder dit staan ze in een liggend kader met zwarte balken ernaast.
+  v.addEventListener('loadedmetadata', () => {
+    if (v.videoWidth && v.videoHeight) box.style.aspectRatio = `${v.videoWidth} / ${v.videoHeight}`;
+  }, { once: true });
   return box;
 }
 

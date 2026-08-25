@@ -219,7 +219,8 @@ export const EXERCISES = [
   "video": null,
   "instructions": "Druk twee platen of handpalmen voor borst samen. Duw naar voren met constante spanning.",
   "recoveryHours": 24,
-  "demo": true
+  "demo": true,
+  "clip": true
  },
  {
   "id": "back_barbell_row",
@@ -255,8 +256,7 @@ export const EXERCISES = [
   "instructions": "Eén hand en knie op bank. Trek dumbbell naar heup, kneep schouderblad.",
   "recoveryHours": 36,
   "demo": true,
-  "videoSrc": "bb",
-  "clip": true
+  "videoSrc": "bb"
  },
  {
   "id": "back_lat_pulldown",
@@ -469,7 +469,8 @@ export const EXERCISES = [
   "video": "qEwKCR5JCog",
   "instructions": "Zit of sta, dumbbells op schouderhoogte. Druk omhoog, laat zakken.",
   "recoveryHours": 48,
-  "demo": true
+  "demo": true,
+  "clip": true
  },
  {
   "id": "shoulders_lateral_raise",
@@ -504,7 +505,8 @@ export const EXERCISES = [
   "video": "-t7fuZ0KhDA",
   "instructions": "Sta rechtop, til dumbbells naar voren op tot schouderhoogte.",
   "recoveryHours": 24,
-  "demo": true
+  "demo": true,
+  "clip": true
  },
  {
   "id": "shoulders_reverse_fly",
@@ -577,7 +579,8 @@ export const EXERCISES = [
   "instructions": "Begin met dumbbells voor gezicht (ondergreep). Draai en druk omhoog.",
   "recoveryHours": 48,
   "demo": true,
-  "videoSrc": "bb"
+  "videoSrc": "bb",
+  "clip": true
  },
  {
   "id": "shoulders_cable_lateral_raise",
@@ -970,7 +973,8 @@ export const EXERCISES = [
   "altEquipment": [
    "dumbbells"
   ],
-  "demo": true
+  "demo": true,
+  "clip": true
  },
  {
   "id": "quads_bulgarian_split_squat",
@@ -992,7 +996,8 @@ export const EXERCISES = [
   "altEquipment": [
    "bodyweight"
   ],
-  "demo": true
+  "demo": true,
+  "clip": true
  },
  {
   "id": "quads_lunge",
@@ -1144,7 +1149,8 @@ export const EXERCISES = [
   "video": null,
   "instructions": "Sta rechtop met dumbbells. Buig voorover met bijna gestrekte benen.",
   "recoveryHours": 48,
-  "demo": true
+  "demo": true,
+  "clip": true
  },
  {
   "id": "hams_seated_leg_curl",
@@ -1249,8 +1255,7 @@ export const EXERCISES = [
   "video": "8bbE64NuDTU",
   "instructions": "Lig op rug, knieen gebogen. Druk heupen omhoog, kneep bilspieren.",
   "recoveryHours": 24,
-  "demo": true,
-  "clip": true
+  "demo": true
  },
  {
   "id": "glutes_step_up",
@@ -1272,7 +1277,8 @@ export const EXERCISES = [
    "dumbbells",
    "bodyweight"
   ],
-  "demo": true
+  "demo": true,
+  "clip": true
  },
  {
   "id": "glutes_single_leg_hip_thrust",

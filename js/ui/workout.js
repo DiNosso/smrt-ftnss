@@ -3,7 +3,7 @@
 
 import { el, videoBlock, demoBlock, visualBlock, fmtTime, toast, sheet, confetti, cardHead, explain, ICO } from './common.js';
 import { get, S, update, todayISO } from '../state.js';
-import { buildWorkout, recordProgress, detectPRs, warmupFor, alternativesFor, suggestWeight, nextWeight, stepDown, lastSetCue } from '../engine.js';
+import { buildWorkout, recordProgress, detectPRs, warmupFor, alternativesFor, suggestWeight, nextWeight, stepDown, lastSetCue, calibrate, estimateFromKnown } from '../engine.js';
 import { byId, MUSCLE_NL } from '../data/exercises.js';
 import { openTV } from './cast.js';
 import * as icu from '../icu.js';
@@ -193,6 +193,19 @@ export function openWorkout(session, adjust, ctx, timeCap = null) {
     card.append(el('div', { class: 'mt', style: 'font-weight:600;color:var(--primary);font-size:.92rem' },
       (slot.suggestion.big ? '⏫ ' : slot.suggestion.isUp ? '↗ ' : slot.suggestion.isDown ? '↘ ' : '↳ ') + slot.suggestion.text));
     if (slot.suggestion.why) card.append(el('div', { class: 'tiny dim', style: 'margin-top:3px' }, slot.suggestion.why));
+    // Nog geen data van deze oefening? Bied aan om het startgewicht te bepalen.
+    if (slot.suggestion.isNew && !slot.suggestion.weight) {
+      const est = estimateFromKnown(slot.ex);
+      if (est) card.append(el('div', { class: 'tiny', style: 'margin-top:3px;color:var(--primary)' },
+        `Schatting op basis van je ${est.from}: ± ${est.weight} kg`));
+      card.append(el('button', { class: 'btn-sm mt', onclick: () => openCalibrate(slot, est, (kg) => {
+        // Werksets en suggestie bijwerken, daarna opnieuw tekenen.
+        slots[si] = { ...slot, suggestion: { ...slot.suggestion, weight: kg, isNew: false,
+          text: `${kg} kg — bepaald met een testset`, why: 'Vanaf nu stuurt je RIR het gewicht.' } };
+        for (const st of sets) if (st.slotIdx === si && !st.done) st.weight = kg;
+        renderAll();
+      }) }, '⚖ Startgewicht bepalen'));
+    }
     card.append(el('div', { class: 'tiny', style: 'margin-top:6px;color:var(--warn)' }, '🎯 ' + lastSetCue(slot)));
     if (slot.note) card.append(el('p', { class: 'tiny dim mt mb0' }, slot.note));
 
@@ -396,4 +409,43 @@ export function openWorkout(session, adjust, ctx, timeCap = null) {
   }
 
   renderAll();
+}
+
+/**
+ * Startgewicht bepalen met één testset. Je doet een set met een gewicht dat je
+ * aandurft en vertelt hoeveel reps je haalde en hoeveel je er nog over had.
+ */
+function openCalibrate(slot, est, apply) {
+  const wIn = el('input', { type: 'number', inputmode: 'decimal', step: '0.5',
+    placeholder: 'kg', value: est?.weight ?? '' });
+  const rIn = el('input', { type: 'number', inputmode: 'numeric', placeholder: 'reps' });
+  const rirIn = el('select', {}, [0, 1, 2, 3, 4, 5].map(v =>
+    el('option', { value: v, selected: v === 2 }, v === 0 ? '0 — niets meer' : `${v} reps over`)));
+  const out = el('div', { class: 'mt' });
+  const calc = el('button', { class: 'btn-primary btn-block mt' }, 'Bereken werkgewicht');
+
+  const close = sheet(el('div', {},
+    el('h3', {}, 'Startgewicht bepalen'),
+    el('p', { class: 'tiny dim' }, `${slot.exercise?.nameNL || slot.ex} — doe één testset met een gewicht dat je zeker aankunt. Stop als je nog een paar reps over hebt; het hoeft niet tot falen.`),
+    el('label', {}, 'Gewicht van je testset'), wIn,
+    el('label', {}, 'Hoeveel reps haalde je?'), rIn,
+    el('label', {}, 'Hoeveel had je er nog over?'), rirIn,
+    calc, out));
+
+  calc.addEventListener('click', () => {
+    const r = calibrate({ weight: wIn.value, reps: rIn.value, rir: rirIn.value, repRange: slot.reps });
+    if (!r) return toast('Vul gewicht en reps in');
+    out.innerHTML = '';
+    out.append(el('div', { class: 'card raised' },
+      el('div', { class: 'spread' },
+        el('span', { class: 'tiny dim' }, `Werkgewicht voor ${r.midReps} reps`),
+        el('span', { style: 'font-size:1.5rem;color:var(--accent);font-weight:700' }, `${r.weight} kg`)),
+      el('p', { class: 'tiny dim mt mb0' }, r.why),
+      !r.confident ? el('p', { class: 'tiny mb0', style: 'color:var(--warn)' },
+        'Neem dit met een korrel zout — begin liever iets lichter en laat de app het de komende sessies bijstellen.') : null,
+      el('button', { class: 'btn-primary btn-block mt', onclick: () => {
+        apply(r.weight);
+        close(); toast(`Werksets op ${r.weight} kg gezet`);
+      } }, `✓ Gebruik ${r.weight} kg`)));
+  });
 }

@@ -3,7 +3,7 @@
 
 import { SESSIONS, DELOAD, PROGRESSION } from './data/program.js';
 import { byId, EXERCISES } from './data/exercises.js';
-import { get, S, todayISO, addDays } from './state.js';
+import { get, S, update, todayISO, addDays } from './state.js';
 import * as icu from './icu.js';
 
 // ---------- Custom data (eigen oefeningen + bewerkte sessies) ----------
@@ -130,7 +130,24 @@ export const SPORT_CHOICES = [
 export function plannedOn(iso) {
   const manual = (get().plannedSports || {})[iso] || [];
   const fromIcu = icu.plannedEventsOn(get().icuCache, iso);
-  return [...manual, ...fromIcu];
+  return [...fixedSportsOn(iso), ...manual, ...fromIcu];
+}
+
+/**
+ * Vaste sportdagen (bijv. elke maandag padel). Slaat de dag over als je hem
+ * hebt afgemeld, en ook als je die sport die dag al ergens anders hebt gezet.
+ */
+export function fixedSportsOn(iso) {
+  if (get().sportSkips?.[iso]) return [];
+  const dow = dowOf(iso);
+  return (S().fixedSports || [])
+    .filter(f => f.dow === dow)
+    .map(f => ({ type: f.type, hard: true, fixed: true }));
+}
+
+/** Staat er op deze dag een sport (vast, zelf ingepland of uit de kalender)? */
+export function sportDay(iso) {
+  return plannedOn(iso).length > 0;
 }
 
 /**
@@ -271,6 +288,12 @@ export function schedule(targetIso, fromIso = todayISO()) {
       if (mins === 0) {
         pick = 'rest';
         reason = 'geen tijd ingepland';
+      } else if (planToday.any) {
+        // Sportdag: die dag is bezet. Geen krachtsessie, ook geen snack —
+        // de wachtrij schuift gewoon door naar de eerstvolgende vrije dag.
+        pick = 'rest';
+        const nm = planToday.list.map(p => icu.TYPE_NL[p.type] || p.type).join(', ').toLowerCase();
+        reason = `${nm} — sportdag`;
       } else if (mins < 40 && need > 0 && eligible && !planToday.hard) {
         pick = lastSnackId === 'snackCore' ? 'snackPump' : 'snackCore';
         reason = `${mins} min beschikbaar — korte sessie`;
@@ -633,6 +656,17 @@ export function suggestWeight(exId, repRange) {
     const nw = nextWeight(w);
     if (nw > w) return { weight: nw, isUp: true, text: `${nw} kg — omhoog`, why: `Gemiddeld ${avgRir.toFixed(1)} reps over vorige keer; je kunt dichter tegen falen aan.` };
   }
+  // Zwaarste dumbbell bereikt terwijl je nog reps over hebt: gewicht is geen
+  // knop meer, dus stuur op reps, tempo en moeilijkere varianten.
+  if (avgRir != null && avgRir >= 2.5 && w && nextWeight(w) === w) {
+    return {
+      weight: w, isUp: true, atMax: true,
+      text: `${w} kg — je zwaarste dumbbell`,
+      why: `Nog ${avgRir.toFixed(1)} reps over, maar zwaarder heb je niet. Maak het moeilijker in plaats van zwaarder: `
+        + `3 seconden laten zakken, 1 seconde pauze op het zwaarste punt, of eenzijdig uitvoeren. `
+        + `Werk anders door tot ${repRange[1] + 4} reps voor je de oefening wisselt.`,
+    };
+  }
   if (avgRir != null && avgRir <= 0.2 && minReps < repRange[0] && w) {
     const nw = stepDown(w);
     if (nw < w) return { weight: nw, isDown: true, text: `${nw} kg — stapje terug`, why: 'Vorige keer ging je stuk vóór de rep-range. Iets lichter, strakke techniek, dan weer omhoog.' };
@@ -912,6 +946,215 @@ export function warmupFor(slots) {
     ],
     workWeight: w,
   };
+}
+
+/**
+ * Startgewicht bepalen voor een oefening waar je nog geen data van hebt.
+ * Je doet één testset met een gewicht dat je aandurft, telt je reps en schat
+ * hoeveel je er nog over had (RIR). Daaruit volgt je geschatte 1RM (Epley),
+ * en daaruit het gewicht voor je echte werksets.
+ *
+ *   reps tot falen = gedane reps + RIR
+ *   e1RM           = gewicht × (1 + repsTotFalen / 30)
+ *   werkgewicht    = e1RM / (1 + (doelreps + doelRIR) / 30)
+ */
+export function calibrate({ weight, reps, rir, repRange, targetRir = 2 }) {
+  const w = Number(weight), r = Number(reps), ri = Number(rir);
+  if (!(w > 0) || !(r > 0) || ri < 0) return null;
+  const toFailure = r + ri;
+  const oneRm = w * (1 + toFailure / 30);
+  const midReps = Math.round((repRange[0] + repRange[1]) / 2);
+  const raw = oneRm / (1 + (midReps + targetRir) / 30);
+  const work = roundToStep(raw);
+  return {
+    e1rm: Math.round(oneRm * 10) / 10,
+    midReps,
+    weight: work,
+    // Hoe zeker is dit? Een testset ver van falen zegt weinig.
+    confident: toFailure <= 15 && ri <= 4,
+    why: toFailure > 15
+      ? `Je deed ${r} reps met nog ${ri} over — dat is een uithoudingsset. De schatting klopt beter met een zwaardere testset.`
+      : ri > 4
+        ? `Je had nog ${ri} reps over. Ver van falen schat onnauwkeurig; pak volgende keer wat zwaarder.`
+        : `${r} reps met ${ri} over = ${toFailure} tot spierfalen. Geschatte 1RM ${Math.round(oneRm)} kg.`,
+  };
+}
+
+/**
+ * Grove schatting op basis van een oefening die je al wél kent, via bekende
+ * krachtverhoudingen. Alleen als vertrekpunt — de testset is nauwkeuriger.
+ */
+const RATIO = {
+  chest_dumbbell_bench_press: 1,
+  chest_incline_dumbbell_press: 0.85,
+  chest_dumbbell_fly: 0.5,
+  shoulders_dumbbell_press: 0.65,
+  shoulders_arnold_press: 0.6,
+  shoulders_lateral_raise: 0.3,
+  shoulders_front_raise: 0.3,
+  shoulders_reverse_fly: 0.3,
+  back_dumbbell_row: 0.95,
+  biceps_dumbbell_curl: 0.4,
+  biceps_hammer_curl: 0.45,
+  biceps_concentration_curl: 0.33,
+  biceps_incline_curl: 0.35,
+  triceps_overhead_extension: 0.4,
+  triceps_kickback: 0.25,
+};
+
+export function estimateFromKnown(exId) {
+  const target = RATIO[exId];
+  if (!target) return null;
+  const lw = get().lastWeights;
+  let best = null;
+  for (const [id, ratio] of Object.entries(RATIO)) {
+    if (id === exId || !lw[id]?.weight) continue;
+    const est = (lw[id].weight / ratio) * target;
+    // pak de bekende oefening die qua verhouding het dichtst bij ligt
+    const dist = Math.abs(Math.log(ratio / target));
+    if (!best || dist < best.dist) best = { dist, from: id, weight: roundToStep(est) };
+  }
+  if (!best) return null;
+  return { weight: best.weight, from: byId[best.from]?.nameNL || best.from };
+}
+
+/**
+ * Strong-export (CSV) inlezen om baselines op te halen. Strong exporteert
+ * kolommen als: Date, Workout Name, Exercise Name, Set Order, Weight, Reps, RPE.
+ * We nemen per oefening de zwaarste set en zetten die in lastWeights, zodat
+ * de app meteen een startgewicht heeft in plaats van "eerste keer".
+ */
+export function parseStrongCsv(text) {
+  const rows = csvRows(text);
+  if (rows.length < 2) return { matched: [], unmatched: [], sets: 0 };
+  const head = rows[0].map(h => h.trim().toLowerCase().replace(/^"|"$/g, ''));
+  const col = (...names) => {
+    for (const n of names) { const i = head.indexOf(n); if (i >= 0) return i; }
+    return -1;
+  };
+  const iDate = col('date'), iEx = col('exercise name', 'exercise'),
+        iW = col('weight', 'weight (kg)'), iR = col('reps'), iRpe = col('rpe');
+  if (iEx < 0 || iW < 0 || iR < 0) return { error: 'Kolommen niet herkend — is dit een Strong-export?' };
+
+  const best = {};   // strongNaam -> {weight, reps, date}
+  let sets = 0;
+  for (const r of rows.slice(1)) {
+    const name = (r[iEx] || '').trim();
+    const w = parseFloat(r[iW]), rep = parseInt(r[iR], 10);
+    if (!name || !(w > 0) || !(rep > 0)) continue;
+    sets++;
+    const date = (r[iDate] || '').slice(0, 10);
+    const score = w * (1 + rep / 30);           // e1RM als maat voor "zwaarste"
+    if (!best[name] || score > best[name].score) best[name] = { weight: w, reps: rep, date, score };
+  }
+
+  const matched = [], unmatched = [];
+  for (const [name, b] of Object.entries(best)) {
+    const id = matchExercise(name);
+    if (id) matched.push({ id, name, nameNL: byId[id].nameNL, ...b, odd: implausible(id, b.weight) });
+    else unmatched.push({ name, ...b });
+  }
+  matched.sort((a, b) => a.nameNL.localeCompare(b.nameNL));
+  return { matched, unmatched, sets };
+}
+
+/**
+ * Strong-oefeningnaam koppelen aan een oefening in de app. Het materiaal weegt
+ * zwaar mee: "Bench Press (Dumbbell)" moet niet op de barbell-variant landen.
+ */
+const EQ_WORDS = {
+  dumbbell: 'dumbbells', dumbbells: 'dumbbells',
+  barbell: 'barbell', kettlebell: 'kettlebell',
+  cable: 'cableMachine', machine: 'machine',
+  band: 'resistanceBands', bands: 'resistanceBands',
+  bodyweight: 'bodyweight',
+};
+const STOP = new Set(['the', 'a', 'with', 'and', 'over', 'up', 'to']);
+
+function words(t) {
+  return t.toLowerCase().replace(/[^a-z]+/g, ' ').trim().split(' ').filter(w => w && !STOP.has(w));
+}
+
+function matchExercise(strongName) {
+  const all = words(strongName);
+  const eqWanted = all.map(w => EQ_WORDS[w]).find(Boolean) || null;
+  const want = new Set(all.filter(w => !EQ_WORDS[w]));   // materiaal apart beoordelen
+  if (!want.size) return null;
+
+  // Alleen oefeningen die je met jouw materiaal kunt doen: een baseline voor
+  // een barbell-squat heeft geen zin als je geen stang hebt.
+  const myEq = new Set(S().equipment || []);
+  if (S().hasPullUpBar) myEq.add('pullUpBar');
+
+  let best = null;
+  for (const ex of EXERCISES) {
+    if (!ex.equipment.every(q => myEq.has(q))) continue;
+    const haveAll = words(ex.name + ' ' + ex.nameNL);
+    const have = new Set(haveAll.filter(w => !EQ_WORDS[w]));
+    let hit = 0;
+    for (const w of want) if (have.has(w)) hit++;
+    if (!hit) continue;
+
+    // Materiaal: match telt zwaar, mismatch is bijna diskwalificerend.
+    let eqScore = 0;
+    if (eqWanted) {
+      if (ex.equipment.includes(eqWanted)) eqScore = 1;
+      else if (eqWanted === 'machine' || eqWanted === 'cableMachine') eqScore = -1;
+      else if (['dumbbells', 'barbell', 'kettlebell'].some(q => ex.equipment.includes(q))) eqScore = -1;
+    }
+    const cover = hit / want.size;              // hoeveel van de Strong-naam is gedekt
+    const score = cover + eqScore * 0.6;
+    // Eén gedeeld woord is te weinig ("Zercher Squat" is geen Goblet Squat).
+    // Halve dekking mag alleen als het materiaal óók klopt.
+    const goed = cover >= 0.6 || (cover >= 0.5 && eqScore > 0);
+    if (goed && eqScore >= 0 && (!best || score > best.score)) best = { id: ex.id, score };
+  }
+  return best?.id || null;
+}
+
+/**
+ * Ziet dit gewicht er raar uit voor deze oefening? Strong-namen matchen niet
+ * altijd perfect, en een verkeerde koppeling levert een onmogelijk gewicht op.
+ */
+function implausible(exId, weight) {
+  const ex = byId[exId];
+  if (!ex) return null;
+  const inv = (S().dumbbellWeights || '').split(/[,;\s]+/).map(Number).filter(n => n > 0);
+  if (ex.equipment.includes('dumbbells')) {
+    const max = inv.length ? Math.max(...inv) : 45;
+    if (weight > max) return `Zwaarder dan je zwaarste dumbbell (${max} kg) — waarschijnlijk verkeerd gekoppeld.`;
+  }
+  if (ex.equipment.includes('kettlebell') && weight > 40) {
+    return 'Zwaar voor een kettlebell — controleer of dit klopt.';
+  }
+  return null;
+}
+
+/** Geselecteerde baselines wegschrijven. */
+export function applyBaselines(list) {
+  update(st => {
+    for (const b of list) {
+      st.lastWeights[b.id] = { weight: b.weight, reps: b.reps, date: b.date || todayISO() };
+    }
+  });
+}
+
+/** Minimale CSV-lezer die aanhalingstekens en komma's binnen velden aankan. */
+function csvRows(text) {
+  const rows = []; let row = [], cell = '', q = false;
+  const src = text.replace(/\r\n?/g, '\n');
+  for (let i = 0; i < src.length; i++) {
+    const c = src[i];
+    if (q) {
+      if (c === '"') { if (src[i + 1] === '"') { cell += '"'; i++; } else q = false; }
+      else cell += c;
+    } else if (c === '"') q = true;
+    else if (c === ',' || c === ';') { row.push(cell); cell = ''; }
+    else if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+    else cell += c;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter(r => r.some(x => x.trim()));
 }
 
 /** Gelijkwaardige alternatieven voor een oefening (zelfde spiergroep, jouw materiaal). */

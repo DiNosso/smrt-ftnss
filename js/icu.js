@@ -248,3 +248,64 @@ export function plannedEventsOn(cache, iso) {
     source: 'icu',
   }));
 }
+
+// ---------- Activiteit-weergave ----------
+
+const fmtDur = sec => {
+  const h = Math.floor(sec / 3600), m = Math.round((sec % 3600) / 60);
+  return h ? `${h}u ${String(m).padStart(2, '0')}m` : `${m} min`;
+};
+
+/** Korte regel onder een activiteit in de lijst. */
+export function actSummary(a) {
+  const bits = [(a.start_date_local || '').slice(5, 10).split('-').reverse().join('-')];
+  const sec = a.moving_time || a.elapsed_time || 0;
+  if (sec) bits.push(fmtDur(sec));
+  if (a.distance) bits.push((a.distance / 1000).toFixed(1) + ' km');
+  if (a.icu_training_load) bits.push('load ' + Math.round(a.icu_training_load));
+  return bits.join(' · ');
+}
+
+/**
+ * Alles wat intervals.icu over een activiteit weet, in leesbare vorm.
+ * Lege velden vallen weg — niet elke sport levert dezelfde data.
+ */
+export function actDetails(a) {
+  const sec = a.moving_time || a.elapsed_time || 0;
+  const km = a.distance ? a.distance / 1000 : 0;
+  const big = [];
+  if (sec) big.push({ n: fmtDur(sec), l: 'duur' });
+  if (km) big.push({ n: km.toFixed(1), l: 'km' });
+  if (a.icu_training_load) big.push({ n: Math.round(a.icu_training_load), l: 'load' });
+
+  const L = [];
+  const add = (k, v) => { if (v != null && v !== '' && v !== 0) L.push([k, v]); };
+
+  if (km && sec) {
+    if (/Run|Walk|Hike|Swim/.test(a.type || '')) {
+      const spk = sec / km;
+      add('Tempo', `${Math.floor(spk / 60)}:${String(Math.round(spk % 60)).padStart(2, '0')} /km`);
+    } else {
+      add('Snelheid', (km / (sec / 3600)).toFixed(1) + ' km/u');
+    }
+  }
+  add('Hoogtemeters', a.total_elevation_gain ? Math.round(a.total_elevation_gain) + ' m' : null);
+  add('Hartslag gem.', a.average_heartrate ? Math.round(a.average_heartrate) + ' bpm' : null);
+  add('Hartslag max', a.max_heartrate ? Math.round(a.max_heartrate) + ' bpm' : null);
+  add('Vermogen gem.', a.icu_average_watts ? Math.round(a.icu_average_watts) + ' W' : null);
+  add('Genormaliseerd', a.icu_weighted_avg_watts ? Math.round(a.icu_weighted_avg_watts) + ' W' : null);
+  add('Intensiteit', a.icu_intensity ? Math.round(a.icu_intensity) + '%' : null);
+  add('Calorieën', a.calories ? Math.round(a.calories) + ' kcal' : null);
+  add('Cadans', a.average_cadence ? Math.round(a.average_cadence) : null);
+  add('Gevoel', a.feel ? `${a.feel}/5` : null);
+  add('Ervaren zwaarte', a.icu_rpe ? `RPE ${a.icu_rpe}` : null);
+  add('Fitness (CTL)', a.icu_ctl ? Math.round(a.icu_ctl) : null);
+  add('Vermoeidheid (ATL)', a.icu_atl ? Math.round(a.icu_atl) : null);
+  if (a.icu_hr_zone_times?.length) {
+    const z = a.icu_hr_zone_times;
+    const tot = z.reduce((t, x) => t + (x || 0), 0);
+    if (tot) add('Hartslagzones', z.map((x, i) => `Z${i + 1} ${Math.round((x || 0) / tot * 100)}%`).filter((_, i) => z[i]).join(' · '));
+  }
+  add('Type', TYPE_NL[a.type] || a.type);
+  return { big, list: L };
+}

@@ -2,7 +2,7 @@
 
 import { el, DAY_NL, sheet, toast, fmtDate, explain, cardHead, ICO } from './common.js';
 import { get, update, todayISO, addDays } from '../state.js';
-import { schedule, mondayOf, mesoInfo, plannedOn, SPORT_CHOICES } from '../engine.js';
+import { schedule, mondayOf, mesoInfo, plannedOn, SPORT_CHOICES, fixedSportsOn } from '../engine.js';
 import { SESSIONS } from '../data/program.js';
 import * as icu from '../icu.js';
 
@@ -94,6 +94,29 @@ export function openDayPicker(iso, redraw) {
 
   // --- andere sport plannen ---
   box.append(el('h5', { class: 'mt' }, 'Andere sport plannen'));
+
+  // Vaste sportdag (bijv. elke maandag padel): afmelden of verzetten.
+  for (const f of fixedSportsOn(iso)) {
+    box.append(el('div', { class: 'card raised' },
+      el('div', { class: 'spread' },
+        el('span', {}, `${icu.TYPE_ICON[f.type] || ''} ${icu.TYPE_NL[f.type] || f.type}`),
+        el('span', { class: 'pill' }, 'vaste dag')),
+      el('div', { class: 'row mt' },
+        el('button', { class: 'btn-sm grow', onclick: () => {
+          update(st => { st.sportSkips[iso] = true; });
+          done('Deze week overgeslagen — schema aangepast');
+        } }, 'Gaat niet door'),
+        el('button', { class: 'btn-sm grow', onclick: () => openMoveSport(iso, f, done) }, 'Verzetten →'))));
+  }
+  if (get().sportSkips?.[iso]) {
+    box.append(el('div', { class: 'spread', style: 'padding:6px 0' },
+      el('span', { class: 'tiny dim' }, 'Vaste sport staat uit voor deze dag'),
+      el('button', { class: 'btn-sm btn-ghost', style: 'color:var(--accent)', onclick: () => {
+        update(st => { delete st.sportSkips[iso]; });
+        done('Vaste sport weer aan');
+      } }, '↺ Terugzetten')));
+  }
+
   const manual = (get().plannedSports || {})[iso] || [];
   const fromIcu = icu.plannedEventsOn(get().icuCache, iso);
   for (const [idx, p] of manual.entries()) {
@@ -107,26 +130,19 @@ export function openDayPicker(iso, redraw) {
   for (const p of fromIcu) {
     box.append(el('div', { class: 'tiny dim', style: 'padding:4px 0' }, `📅 ${p.name} (uit intervals.icu-kalender)`));
   }
-  let pickedSport = null;
+  // Eén tik is genoeg: een sportdag is een sportdag. Geen vraag meer of het
+  // licht of stevig wordt — dat is vooraf toch niet in te schatten.
   const sportRow = el('div', { class: 'row wrap' }, SPORT_CHOICES.map(c =>
-    el('button', { class: 'btn-sm', onclick: (e) => {
-      pickedSport = c.type;
-      sportRow.querySelectorAll('button').forEach(b => b.classList.remove('btn-secondary'));
-      e.currentTarget.classList.add('btn-secondary');
-      intensityRow.style.display = 'flex';
+    el('button', { class: 'btn-sm', onclick: () => {
+      update(st => {
+        st.plannedSports[iso] = st.plannedSports[iso] || [];
+        st.plannedSports[iso].push({ type: c.type, hard: true });
+        delete st.sportSkips[iso];
+      });
+      done('Sport ingepland — schema aangepast');
     } }, c.label)));
-  const addSport = (hard) => {
-    if (!pickedSport) return;
-    update(st => {
-      st.plannedSports[iso] = st.plannedSports[iso] || [];
-      st.plannedSports[iso].push({ type: pickedSport, hard });
-    });
-    done('Sport ingepland — schema aangepast');
-  };
-  const intensityRow = el('div', { class: 'row mt', style: 'display:none' },
-    el('button', { class: 'btn-sm grow', onclick: () => addSport(false) }, 'Licht / rustig'),
-    el('button', { class: 'btn-sm grow', onclick: () => addSport(true) }, 'Stevig / lang'));
-  box.append(sportRow, intensityRow);
+  box.append(sportRow,
+    el('p', { class: 'tiny dim mt' }, 'Op een sportdag plant de app geen krachtsessie. Die schuift door naar je eerstvolgende vrije dag.'));
 
   // --- krachtsessie aanpassen ---
   box.append(el('h5', { class: 'mt' }, 'Krachtsessie'));
@@ -139,4 +155,25 @@ export function openDayPicker(iso, redraw) {
     box.append(el('button', { class: 'btn-block mt' + (swap === s.id ? ' btn-secondary' : ''), onclick: () => set(s.id) }, s.name));
   }
   if (swap) box.append(el('button', { class: 'btn-block mt btn-ghost', style: 'color:var(--accent)', onclick: () => set(null) }, '↺ Automatische planning'));
+}
+
+/** Vaste sport naar een andere dag deze week verplaatsen. */
+function openMoveSport(iso, f, done) {
+  const mon = mondayOf(iso);
+  const box = el('div', {},
+    el('h3', {}, `${icu.TYPE_NL[f.type] || f.type} verzetten`),
+    el('p', { class: 'tiny dim' }, 'Naar welke dag deze week?'));
+  const close2 = sheet(box);
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(mon, i);
+    if (d === iso) continue;
+    box.append(el('button', { class: 'btn-block mt', onclick: () => {
+      update(st => {
+        st.sportSkips[iso] = true;                       // originele dag vrij
+        st.plannedSports[d] = st.plannedSports[d] || [];
+        st.plannedSports[d].push({ type: f.type, hard: true });
+      });
+      close2(); done('Verzet — schema aangepast');
+    } }, `${DAY_NL[i]} · ${fmtDate(d).replace(/ \d{4}$/, '')}`));
+  }
 }

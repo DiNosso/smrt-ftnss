@@ -392,7 +392,7 @@ hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
 .statrow .l { font-size: .6rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--text-faint); margin-top: 3px; }
 
 /* Weekstrip */
-.weekstrip { display: flex; gap: 6px; align-items: flex-end; height: 78px; }
+.weekstrip { display: flex; gap: 6px; align-items: flex-end; height: 88px; }
 .weekstrip .col.tappable { cursor: pointer; }
 .weekstrip .col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; height: 100%; justify-content: flex-end; }
 .weekstrip .bar {
@@ -405,10 +405,10 @@ hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
 .weekstrip .dl { font-size: .58rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--text-faint); }
 .weekstrip .col.today .dl { color: var(--accent); }
 /* Sport-iconen onder de balk: fel = stevige inspanning, gedimd = licht */
-.weekstrip .sp { display: flex; gap: 1px; justify-content: center; align-items: center; height: 11px; line-height: 1; }
-.weekstrip .spi { font-size: .55rem; line-height: 1; opacity: .5; filter: grayscale(1); }
-.weekstrip .spi.hard { opacity: 1; filter: none; }
-.weekstrip .spi.planned { opacity: .28; }
+.weekstrip .sp { display: flex; gap: 3px; justify-content: center; align-items: center; height: 20px; line-height: 1; }
+.weekstrip .spi { font-size: 1rem; line-height: 1; opacity: .85; }
+.weekstrip .spi.hard { opacity: 1; text-shadow: 0 0 9px rgba(56,237,208,.55); }
+.weekstrip .spi.planned { opacity: .4; filter: grayscale(1); }
 
 /* Spierkaart (silhouet) */
 .bodymap { display: flex; gap: 10px; justify-content: center; align-items: center; }
@@ -447,7 +447,10 @@ details.explain .body { font-size: .8rem; line-height: 1.5; color: var(--text-di
 details.explain.solo { border-top: none; margin-top: 0; padding-top: 0; }
 
 /* Echte video-loop */
-.demo.clip video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #0a0f0e; }
+/* Echte clips zijn staand. Kader krijgt die verhouding en wordt gecentreerd,
+   zodat er geen zwarte balken naast staan. */
+.demo.clip { aspect-ratio: 9 / 16; max-height: 46vh; width: auto; margin-inline: auto; }
+.demo.clip video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; background: #0a0f0e; }
 .demo.clip-failed { display: none; }
 .tv .tvvid video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
 
@@ -516,6 +519,13 @@ body.resting #app { padding-bottom: calc(var(--tabbar-h) + 96px); }
 .tv .tvtop .clock { margin-left: auto; font-family: var(--font-display); font-size: clamp(1rem, 3vmin, 2.2rem); color: var(--text-dim); font-variant-numeric: tabular-nums; }
 .tv .tvmain { flex: 1; display: flex; gap: 3vmin; min-height: 0; }
 .tv .tvvid { flex: 1.25; border-radius: 14px; overflow: hidden; background: #000; position: relative; min-height: 0; }
+/* Staand beeld (de echte clips zijn 9:16): kolom krijgt de hoogte van het scherm
+   en precies de breedte die het beeld nodig heeft. Geen zwarte balken, en de
+   vrijgekomen ruimte gaat naar reps en timer. */
+.tv .tvvid.portrait { flex: 0 0 auto; height: 100%; width: auto; max-width: 42%; background: transparent; }
+.tv .tvvid.portrait video, .tv .tvvid.portrait img { position: static; width: 100%; height: 100%; object-fit: cover; }
+.tv .tvvid > .demo { position: absolute; inset: 0; width: 100%; height: 100%; aspect-ratio: auto; max-height: none; margin: 0; border-radius: 0; }
+.tv:has(.tvvid.portrait) .tvside { flex: 1; }
 .tv .tvvid img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity .18s linear; }
 .tv .tvvid img.on { opacity: 1; }
 .tv .tvvid iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
@@ -535,4 +545,27 @@ body.resting #app { padding-bottom: calc(var(--tabbar-h) + 96px); }
 @media (orientation: portrait) and (max-width: 700px) {
   .tv .tvmain { flex-direction: column; }
   .tv .tvvid { flex: none; aspect-ratio: 16/9; }
+  .tv .tvvid.portrait { height: auto; max-width: 60%; margin: 0 auto; }
 }
+
+/* Syncregel onder de hero */
+.syncbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: -2px 0 14px; }
+.syncbar .btn-sm.busy { opacity: .6; }
+.syncbar .bad { color: var(--danger); }
+
+/* Naar beneden trekken om te verversen */
+.ptr {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 150; text-align: center;
+  padding: 10px; font-size: .74rem; color: var(--accent); background: var(--surface-2);
+  border-bottom: 1px solid var(--border); transform: translateY(-100%);
+  opacity: 0; transition: opacity .15s linear; pointer-events: none;
+}
+.ptr.on { opacity: 1; }
+
+/* Vaste sportdagen */
+.fixedrow { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.fixedrow:last-child { border-bottom: none; }
+.fixedrow .dn { width: 34px; font-size: .74rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--text-dim); flex: none; }
+.fixedrow .sports { display: flex; gap: 5px; flex-wrap: wrap; flex: 1; }
+.fixedrow .sports button { padding: 6px 9px; font-size: .78rem; border-radius: 9px; }
+.fixedrow .sports button.on { background: var(--secondary); border-color: var(--secondary); color: #eafffb; font-weight: 700; }

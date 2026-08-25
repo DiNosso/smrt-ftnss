@@ -4,10 +4,11 @@ import { el, fmtDate, toast, sheet, DAY_NL, ring, statRow, cardHead, explain, we
 import { get, S, update, todayISO, addDays } from '../state.js';
 import * as icu from '../icu.js';
 import {
-  advise, buildWorkout, mesoInfo, muscleStatus, proteinTarget, weekStreak, adhocSession,
+  advise, buildWorkout, mesoInfo, muscleStatus, weekStreak, adhocSession,
   mondayOf, minutesOn, heavyTargetForWeek, weeklyVolume, VOLUME_TARGETS, plannedOn, readinessSignals, plannedSplitOn,
+  sportDay, plannedSession, detectPlateaus,
 } from '../engine.js';
-import { DAILY_HABITS, SESSIONS } from '../data/program.js';
+import { SESSIONS } from '../data/program.js';
 import { openDayPicker } from './week.js';
 import { MUSCLE_NL, EXERCISES } from '../data/exercises.js';
 import { openWorkout } from './workout.js';
@@ -30,6 +31,7 @@ export async function renderToday(app, ctx) {
         el('span', { class: 'pill' + (meso.isDeload ? ' warn' : '') }, meso.isDeload ? 'Deload' : `Blok ${meso.pos + 1}/4`),
         weekStreak() >= 1 ? el('span', { class: 'pill good' }, `🔥 ${weekStreak()}`) : null)),
     heroRing));
+  app.append(syncBar(ctx));
 
   // ---------- Weekstrip + statrij ----------
   const mon = mondayOf(iso);
@@ -73,7 +75,9 @@ export async function renderToday(app, ctx) {
     ])));
 
   // ---------- Check-in ----------
-  app.append(checkinCard(iso, ctx));
+  // Check-in alleen tonen op dagen dat je traint — op een sport- of rustdag
+  // voegt hij niets toe.
+  if (!sportDay(iso) && plannedSession(iso)?.id !== 'rest') app.append(checkinCard(iso, ctx));
 
   // ---------- Advies + sessie ----------
   const adviceBox = el('div');
@@ -205,21 +209,20 @@ export async function renderToday(app, ctx) {
     explain('Hoe werkt dit?', el('p', { class: 'mb0' },
       'Sla je een zware sessie over, dan verdwijnt die niet: de wachtrij schuift op naar de eerstvolgende dag waarop je genoeg tijd hebt én je spieren hersteld zijn. Een vrije workout telt gewoon mee in je volume en herstel.'))));
 
-  // ---------- Dagelijks ----------
-  const habits = get().habits[iso] || {};
-  const activeHabits = DAILY_HABITS.filter(h => h.id !== 'hang' || S().dailyHang || S().hasPullUpBar);
-  app.append(el('div', { class: 'card' },
-    cardHead(ICO.check, 'Dagelijks'),
-    activeHabits.map(h => {
-      let detail = h.detail;
-      if (h.id === 'protein') {
-        const p = proteinTarget(get().icuCache);
-        detail = `Doel: ±${p.grams} g eiwit vandaag (2 g/kg bij ${Math.round(p.kg)} kg), verdeeld over 3-5 momenten.`;
-      }
-      return el('div', { class: 'habit' },
-        el('input', { type: 'checkbox', checked: !!habits[h.id], onchange: e => setHabit(iso, h.id, e.target.checked) }),
-        el('div', {}, el('div', {}, h.name), el('div', { class: 'tiny dim' }, detail)));
-    })));
+  // ---------- Plateaus ----------
+  // Stond eerst alleen op Progressie; je moest er zelf naar gaan zoeken.
+  const plateaus = detectPlateaus();
+  if (plateaus.length) {
+    app.append(el('div', { class: 'card', style: 'border-color:var(--warn)' },
+      cardHead(ICO.chart, plateaus.length === 1 ? 'Eén oefening loopt vast' : `${plateaus.length} oefeningen lopen vast`),
+      plateaus.slice(0, 3).map(p => el('div', { style: 'padding:6px 0;border-bottom:1px solid var(--border)' },
+        el('div', {}, p.exercise?.nameNL || p.ex),
+        el('div', { class: 'tiny dim' }, `Geen progressie sinds ${fmtDate(p.since).replace(/ \d{4}$/, '')}`))),
+      explain('Wat kun je doen?', el('p', { class: 'mb0' },
+        'Drie sessies zonder vooruitgang betekent meestal niet dat je te weinig je best doet. '
+        + 'Probeer een variant of een andere hoek, maak het zwaarder met tempo (3 seconden laten zakken) '
+        + 'in plaats van meer kilo\'s, of neem in de eerstvolgende deloadweek bewust gas terug en bouw opnieuw op.'))));
+  }
 
   // ---------- Recente activiteiten ----------
   const actBox = el('div');
@@ -231,10 +234,11 @@ export async function renderToday(app, ctx) {
     actBox.append(el('div', { class: 'card' },
       cardHead(ICO.heart, 'Recente activiteiten',
         el('span', { class: 'pill' }, 'intervals.icu')),
-      recent.map(a => el('div', { class: 'exrow', onclick: () => openDaySheet((a.start_date_local || '').slice(0, 10), ctx) },
+      recent.map(a => el('div', { class: 'exrow', onclick: () => openActivity(a) },
+        el('span', { style: 'font-size:1.15rem;margin-right:9px' }, icu.TYPE_ICON[a.type] || icu.TYPE_ICON._),
         el('div', { class: 'grow' },
-          el('div', { style: 'font-size:.9rem' }, `${icu.TYPE_NL[a.type] || a.type || '?'} · ${a.name || ''}`.slice(0, 40)),
-          el('div', { class: 'mus' }, `${(a.start_date_local || '').slice(5, 10)} · ${Math.round((a.moving_time || 0) / 60)} min · load ${Math.round(a.icu_training_load || 0)}`)),
+          el('div', { style: 'font-size:.9rem' }, `${a.name || icu.TYPE_NL[a.type] || a.type || '?'}`.slice(0, 34)),
+          el('div', { class: 'mus' }, icu.actSummary(a))),
         el('span', { class: 'dim' }, '›')))));
   };
   drawActs(get().icuCache);
@@ -435,9 +439,83 @@ function openAdhocPicker(ctx) {
   });
 }
 
-function setHabit(iso, id, val) {
-  update(s => {
-    s.habits[iso] = s.habits[iso] || {};
-    s.habits[iso][id] = val;
+/** Zichtbare syncregel: wanneer voor het laatst opgehaald + knop om te verversen. */
+function syncBar(ctx) {
+  const bar = el('div', { class: 'syncbar' });
+  const draw = (busy = false, err = null) => {
+    bar.innerHTML = '';
+    const last = S().lastSyncAt;
+    const txt = err ? err
+      : busy ? 'Bezig met ophalen…'
+      : !icu.isConfigured() ? 'intervals.icu niet gekoppeld'
+      : last ? `Bijgewerkt ${agoText(last)}`
+      : 'Nog niet opgehaald';
+    bar.append(
+      el('span', { class: 'tiny' + (err ? ' bad' : ' dim') }, txt),
+      el('button', {
+        class: 'btn-sm' + (busy ? ' busy' : ''),
+        disabled: busy,
+        onclick: () => doSync(),
+      }, busy ? '⟳ Bezig…' : '⟳ Sync'));
+  };
+  const doSync = async () => {
+    if (!icu.isConfigured()) return toast('Vul eerst je intervals.icu-key in bij Instellingen');
+    draw(true);
+    try {
+      await icu.refresh(true);
+      update(st => { st.settings.lastSyncAt = new Date().toISOString(); });
+      toast('Gegevens bijgewerkt');
+      ctx.render();
+    } catch (e) {
+      draw(false, 'Ophalen mislukt — ' + (e?.message || 'geen verbinding'));
+    }
+  };
+  draw();
+  enablePullToRefresh(doSync);
+  return bar;
+}
+
+function agoText(iso) {
+  const min = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (min < 1) return 'zojuist';
+  if (min < 60) return `${min} min geleden`;
+  const u = Math.round(min / 60);
+  if (u < 24) return `${u} uur geleden`;
+  return `${Math.round(u / 24)} dag(en) geleden`;
+}
+
+/** Naar beneden trekken bovenaan de pagina = verversen. */
+function enablePullToRefresh(onRefresh) {
+  if (document.body.dataset.ptr) return;   // maar één keer koppelen
+  document.body.dataset.ptr = '1';
+  const ind = el('div', { class: 'ptr' }, '⟳ Loslaten om te verversen');
+  document.body.append(ind);
+  let startY = null, pulling = false;
+  addEventListener('touchstart', e => {
+    startY = (document.scrollingElement?.scrollTop || 0) <= 0 ? e.touches[0].clientY : null;
+  }, { passive: true });
+  addEventListener('touchmove', e => {
+    if (startY == null) return;
+    const d = e.touches[0].clientY - startY;
+    if (d > 12) { pulling = true; ind.style.transform = `translateY(${Math.min(d * .5, 64)}px)`; ind.classList.add('on'); }
+  }, { passive: true });
+  addEventListener('touchend', () => {
+    if (pulling) { ind.classList.remove('on'); ind.style.transform = ''; onRefresh(); }
+    startY = null; pulling = false;
   });
+}
+
+/** Detail van één intervals.icu-activiteit. */
+function openActivity(a) {
+  const rows = icu.actDetails(a);
+  sheet(el('div', {},
+    el('h3', {}, `${icu.TYPE_ICON[a.type] || ''} ${a.name || icu.TYPE_NL[a.type] || a.type}`),
+    el('div', { class: 'tiny dim' }, fmtDate((a.start_date_local || '').slice(0, 10))
+      + ((a.start_date_local || '').slice(11, 16) ? ` · ${a.start_date_local.slice(11, 16)}` : '')),
+    rows.big.length ? statRow(rows.big) : null,
+    el('div', { class: 'card raised mt' }, rows.list.map(([k, v]) =>
+      el('div', { class: 'spread', style: 'padding:7px 0;border-bottom:1px solid var(--border)' },
+        el('span', { class: 'tiny dim' }, k),
+        el('span', { style: 'font-size:.9rem' }, v)))),
+    a.description ? el('p', { class: 'tiny mt' }, a.description) : null));
 }

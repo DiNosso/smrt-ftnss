@@ -1,7 +1,7 @@
 // Eenvoudige localStorage-state. Alles lokaal, niets verlaat je toestel
 // behalve directe calls naar intervals.icu en YouTube.
 
-export const VERSION = '2.6.2';
+export const VERSION = '2.7.2';
 
 const KEY = 'fait.v1';
 
@@ -23,6 +23,10 @@ const DEFAULTS = {
     availability: [60, 15, 60, 15, 60, 30, 0],
     heavyPerWeek: 3,           // gewenst aantal zware sessies per week
     dailyHang: false,          // dagelijks hangen tonen (alleen zinvol met stang/rek)
+    // Vaste sportdagen: [{dow: 0-6 (0=maandag), type: 'Padel'|'Swim'|...}]
+    // Op deze dagen plant de app geen krachtsessie.
+    fixedSports: [],
+    lastSyncAt: null,          // ISO-tijd van de laatste intervals.icu-sync
     lastBackupAt: null,        // ISO-datum laatste backup-export
   },
   weights: {},                 // {'YYYY-MM-DD': kg} handmatige wegingen
@@ -35,6 +39,7 @@ const DEFAULTS = {
   habits: {},                  // {'YYYY-MM-DD': {hang: true, protein: true, sleep: true}}
   tired: {},                   // {'YYYY-MM-DD': 'moe'|'kapot'} handmatige override
   swaps: {},                   // {'YYYY-MM-DD': sessionId} handmatig gewisselde dagen
+  sportSkips: {},              // {'YYYY-MM-DD': true} vaste sport gaat deze dag niet door
   lastWeights: {},             // {exerciseId: {weight, reps, date}}
   icuCache: null,              // {fetchedAt, wellness: [...], activities: [...]}
 };
