@@ -1049,67 +1049,193 @@ export function parseStrongCsv(text) {
   }
 
   const matched = [], unmatched = [];
+  const perId = {};   // meerdere Strong-namen kunnen op dezelfde oefening uitkomen
   for (const [name, b] of Object.entries(best)) {
     const id = matchExercise(name);
-    if (id) matched.push({ id, name, nameNL: byId[id].nameNL, ...b, odd: implausible(id, b.weight) });
-    else unmatched.push({ name, ...b });
+    if (!id) { unmatched.push({ name, ...b }); continue; }
+    const cand = { id, name, nameNL: byId[id].nameNL, ...b, odd: implausible(id, b.weight) };
+    const cur = perId[id];
+    // Het meest recente wint; bij gelijke datum de zwaarste set.
+    if (!cur || (cand.date || '') > (cur.date || '') ||
+        ((cand.date || '') === (cur.date || '') && cand.score > cur.score)) {
+      if (cur) unmatched.push({ name: cur.name, weight: cur.weight, reps: cur.reps, date: cur.date, dupe: true });
+      perId[id] = cand;
+    } else {
+      unmatched.push({ name, ...b, dupe: true });
+    }
   }
+  matched.push(...Object.values(perId));
   matched.sort((a, b) => a.nameNL.localeCompare(b.nameNL));
-  return { matched, unmatched, sets };
+  const newest = matched.reduce((t, m) => (m.date > t ? m.date : t), '');
+  return { matched, unmatched, sets, ...staleness(newest) };
 }
 
 /**
- * Strong-oefeningnaam koppelen aan een oefening in de app. Het materiaal weegt
- * zwaar mee: "Bench Press (Dumbbell)" moet niet op de barbell-variant landen.
+ * Strong-oefeningnaam koppelen aan een oefening in de app.
+ *
+ * Fuzzy matchen op woorden gaat hier mis: "Bicep Curl" en "Dumbbell Curl"
+ * delen één woord, "Overhead Press" en "Dumbbell Shoulder Press" geen enkel,
+ * terwijl ze wél hetzelfde zijn. En "Incline Bench Press" lijkt juist heel erg
+ * op "Bench Press" terwijl het een andere oefening is. Daarom een expliciete
+ * tabel: voorspelbaar en te controleren.
+ *
+ * De sleutel is de Strong-naam zonder materiaal-achtervoegsel, in kleine
+ * letters. Alleen oefeningen die met eigen materiaal te doen zijn.
  */
-const EQ_WORDS = {
-  dumbbell: 'dumbbells', dumbbells: 'dumbbells',
-  barbell: 'barbell', kettlebell: 'kettlebell',
-  cable: 'cableMachine', machine: 'machine',
-  band: 'resistanceBands', bands: 'resistanceBands',
-  bodyweight: 'bodyweight',
+const STRONG_ALIAS = {
+  // borst
+  'bench press': 'chest_dumbbell_bench_press',
+  'chest press': 'chest_dumbbell_bench_press',
+  'incline bench press': 'chest_incline_dumbbell_press',
+  'incline chest press': 'chest_incline_dumbbell_press',
+  'chest fly': 'chest_dumbbell_fly',
+  'incline chest fly': 'chest_dumbbell_fly',
+  'push up': 'chest_push_up',
+  'pushup': 'chest_push_up',
+  // rug
+  'bent over row': 'back_dumbbell_row',
+  'bent over one arm row': 'back_dumbbell_row',
+  'one arm row': 'back_dumbbell_row',
+  'dumbbell row': 'back_dumbbell_row',
+  'seated row': 'back_band_row',
+  'inverted row': 'back_dumbbell_row',
+  // schouders
+  'overhead press': 'shoulders_dumbbell_press',
+  'shoulder press': 'shoulders_dumbbell_press',
+  'military press': 'shoulders_dumbbell_press',
+  'arnold press': 'shoulders_arnold_press',
+  'lateral raise': 'shoulders_lateral_raise',
+  'front raise': 'shoulders_front_raise',
+  'reverse fly': 'shoulders_reverse_fly',
+  'rear delt fly': 'shoulders_reverse_fly',
+  // biceps
+  'bicep curl': 'biceps_dumbbell_curl',
+  'biceps curl': 'biceps_dumbbell_curl',
+  'curl': 'biceps_dumbbell_curl',
+  'hammer curl': 'biceps_hammer_curl',
+  'concentration curl': 'biceps_concentration_curl',
+  'incline curl': 'biceps_incline_curl',
+  'incline bicep curl': 'biceps_incline_curl',
+  'spider curl': 'biceps_spider_curl',
+  'preacher curl': 'biceps_concentration_curl',
+  // triceps
+  'triceps extension': 'triceps_overhead_extension',
+  'tricep extension': 'triceps_overhead_extension',
+  'overhead triceps extension': 'triceps_overhead_extension',
+  'skullcrusher': 'triceps_overhead_extension',
+  'triceps pushdown': 'triceps_band_pushdown',
+  'tricep pushdown': 'triceps_band_pushdown',
+  'triceps kickback': 'triceps_kickback',
+  'tricep kickback': 'triceps_kickback',
+  // benen
+  'squat': 'quads_goblet_squat',
+  'goblet squat': 'quads_goblet_squat',
+  'front squat': 'quads_goblet_squat',
+  'bulgarian split squat': 'quads_bulgarian_split_squat',
+  'split squat': 'quads_bulgarian_split_squat',
+  'lunge': 'quads_lunge',
+  'walking lunge': 'quads_lunge',
+  'reverse lunge': 'quads_lunge',
+  'step up': 'glutes_step_up',
+  'sumo squat': 'glutes_sumo_squat',
+  'romanian deadlift': 'hams_stiff_leg_deadlift',
+  'stiff leg deadlift': 'hams_stiff_leg_deadlift',
+  'deadlift': 'hams_stiff_leg_deadlift',
+  'hip thrust': 'glutes_single_leg_hip_thrust',
+  'glute bridge': 'glutes_glute_bridge',
+  'leg curl': 'hams_nordic_curl',
+  'seated leg curl': 'hams_nordic_curl',
+  // kuiten, core, full body
+  'standing calf raise': 'calves_single_leg_raise',
+  'seated calf raise': 'calves_seated_raise',
+  'calf raise': 'calves_single_leg_raise',
+  'crunch': 'core_crunch',
+  'plank': 'core_plank',
+  'russian twist': 'core_russian_twist',
+  'ab wheel': 'core_ab_wheel',
+  'hanging leg raise': 'core_lying_leg_raise',
+  'leg raise': 'core_lying_leg_raise',
+  'mountain climber': 'core_mountain_climber',
+  'kettlebell swing': 'full_kettlebell_swing',
+  'burpee': 'full_burpee',
+  'farmers walk': 'forearms_farmer_walk',
 };
-const STOP = new Set(['the', 'a', 'with', 'and', 'over', 'up', 'to']);
 
-function words(t) {
-  return t.toLowerCase().replace(/[^a-z]+/g, ' ').trim().split(' ').filter(w => w && !STOP.has(w));
+/** Strong zet het materiaal tussen haakjes: "Bench Press (Dumbbell)". */
+function strongKey(name) {
+  return name
+    .toLowerCase()
+    .replace(/\(.*?\)/g, ' ')          // materiaal-achtervoegsel weg
+    .replace(/\s*-\s*[a-z\s]+$/, ' ')  // "- Wide Grip" e.d. weg
+    .replace(/[^a-z\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** Welk materiaal noemt Strong? Bepaalt of de oefening thuis te doen is. */
+function strongEquipment(name) {
+  const m = name.toLowerCase().match(/\(([^)]+)\)/);
+  if (!m) return null;
+  const t = m[1];
+  if (t.includes('dumbbell')) return 'dumbbells';
+  if (t.includes('kettlebell')) return 'kettlebell';
+  if (t.includes('band')) return 'resistanceBands';
+  if (t.includes('bodyweight')) return 'bodyweight';
+  if (t.includes('barbell')) return 'barbell';
+  if (t.includes('cable')) return 'cableMachine';
+  if (t.includes('machine') || t.includes('smith') || t.includes('plate')) return 'machine';
+  return null;
 }
 
 function matchExercise(strongName) {
-  const all = words(strongName);
-  const eqWanted = all.map(w => EQ_WORDS[w]).find(Boolean) || null;
-  const want = new Set(all.filter(w => !EQ_WORDS[w]));   // materiaal apart beoordelen
-  if (!want.size) return null;
+  const id = STRONG_ALIAS[strongKey(strongName)];
+  if (!id || !byId[id]) return null;
+  const ex = byId[id];
 
-  // Alleen oefeningen die je met jouw materiaal kunt doen: een baseline voor
-  // een barbell-squat heeft geen zin als je geen stang hebt.
   const myEq = new Set(S().equipment || []);
   if (S().hasPullUpBar) myEq.add('pullUpBar');
+  if (!ex.equipment.every(q => myEq.has(q))) return null;
 
-  let best = null;
-  for (const ex of EXERCISES) {
-    if (!ex.equipment.every(q => myEq.has(q))) continue;
-    const haveAll = words(ex.name + ' ' + ex.nameNL);
-    const have = new Set(haveAll.filter(w => !EQ_WORDS[w]));
-    let hit = 0;
-    for (const w of want) if (have.has(w)) hit++;
-    if (!hit) continue;
+  // Het gewicht moet overdraagbaar zijn. 30 kg op een curlmachine zegt niets
+  // over dumbbells, en 60 kg op een Smith-squat al helemaal niet: hefboom,
+  // geleiding en eigen gewicht verschillen te veel. Alleen vrij gewicht telt.
+  const se = strongEquipment(strongName);
+  if (se === 'machine' || se === 'cableMachine' || se === 'barbell') return null;
+  if (se && !ex.equipment.includes(se) && !(se === 'bodyweight' && ex.equipment.includes('bodyweight'))) return null;
+  if (!se && !ex.equipment.includes('bodyweight')) return null;
 
-    // Materiaal: match telt zwaar, mismatch is bijna diskwalificerend.
-    let eqScore = 0;
-    if (eqWanted) {
-      if (ex.equipment.includes(eqWanted)) eqScore = 1;
-      else if (eqWanted === 'machine' || eqWanted === 'cableMachine') eqScore = -1;
-      else if (['dumbbells', 'barbell', 'kettlebell'].some(q => ex.equipment.includes(q))) eqScore = -1;
-    }
-    const cover = hit / want.size;              // hoeveel van de Strong-naam is gedekt
-    const score = cover + eqScore * 0.6;
-    // Eén gedeeld woord is te weinig ("Zercher Squat" is geen Goblet Squat).
-    // Halve dekking mag alleen als het materiaal óók klopt.
-    const goed = cover >= 0.6 || (cover >= 0.5 && eqScore > 0);
-    if (goed && eqScore >= 0 && (!best || score > best.score)) best = { id: ex.id, score };
+  return id;
+}
+
+/**
+ * Hoe oud is deze data, en wat betekent dat voor je startgewicht?
+ *
+ * Kracht loopt terug als je lang niet traint. Hoeveel precies verschilt per
+ * persoon, maar terugkomen op je oude gewichten is een slecht startpunt: je
+ * pezen en gewrichten lopen achter op wat je spieren nog "kennen". Beter licht
+ * beginnen en de RIR-motor het in een paar weken laten opbouwen — dat gaat
+ * sneller dan de eerste keer opbouwen, want de aanleg is er nog.
+ */
+export function staleness(newestIso) {
+  if (!newestIso) return { months: null, factor: 1, note: null };
+  const months = Math.round((Date.now() - new Date(newestIso + 'T12:00:00').getTime()) / 2629800000);
+  let factor = 1, note = null;
+  if (months >= 12) {
+    factor = 0.6;
+    note = `Je laatste gelogde training is ruim ${Math.floor(months / 12)} jaar geleden. Begin op ongeveer 60% — de app werkt je in een paar weken terug omhoog.`;
+  } else if (months >= 6) {
+    factor = 0.75;
+    note = `Je laatste gelogde training is ${months} maanden geleden. Begin op ongeveer 75%.`;
+  } else if (months >= 3) {
+    factor = 0.85;
+    note = `Je laatste gelogde training is ${months} maanden geleden. Begin iets lichter, rond 85%.`;
   }
-  return best?.id || null;
+  return { months, factor, note };
+}
+
+/** Startgewichten wegschrijven, eventueel geschaald na een lange pauze. */
+export function scaleBaselines(list, factor) {
+  return list.map(b => ({ ...b, weight: roundToStep(b.weight * factor), original: b.weight }));
 }
 
 /**

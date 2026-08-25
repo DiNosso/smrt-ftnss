@@ -6,7 +6,7 @@ import { EQUIPMENT_NL } from '../data/exercises.js';
 import * as icu from '../icu.js';
 import { openEditor } from './editor.js';
 import { SPORT_CHOICES } from '../engine.js';
-import { parseStrongCsv, applyBaselines } from '../engine.js';
+import { parseStrongCsv, applyBaselines, scaleBaselines } from '../engine.js';
 
 const HOME_EQUIPMENT = ['dumbbells', 'bench', 'inclineBench', 'kettlebell', 'resistanceBands', 'abWheel', 'bodyweight'];
 
@@ -242,21 +242,49 @@ function openStrongImport(text, ctx) {
   if (!res.matched.length && !res.unmatched.length) return toast('Geen sets gevonden in dit bestand');
 
   const checks = {};
+  let factor = res.factor ?? 1;
   const box = el('div', {},
     el('h3', {}, 'Startgewichten uit Strong'),
     el('p', { class: 'tiny dim' }, `${res.sets} sets gelezen. Hieronder je zwaarste set per oefening — vink aan wat je wilt overnemen.`));
   const close = sheet(box);
+
+  // Lang niet getraind? Dan zijn je oude gewichten geen startgewichten.
+  let redraw = () => {};
+  if (res.note) {
+    const pct = el('span', { style: 'color:var(--accent);font-weight:700' });
+    const opts = el('div', { class: 'row wrap mt' }, [1, 0.85, 0.75, 0.6, 0.5].map(f =>
+      el('button', { class: 'btn-sm', 'data-f': String(f), onclick: () => { factor = f; redraw(); } },
+        f === 1 ? '100% (ongewijzigd)' : Math.round(f * 100) + '%')));
+    box.append(el('div', { class: 'card', style: 'border-color:var(--warn)' },
+      el('h5', { class: 'mb0' }, '⚠ Deze data is oud'),
+      el('p', { class: 'tiny dim mt' }, res.note),
+      el('div', { class: 'spread mt' }, el('span', { class: 'tiny dim' }, 'Overnemen op'), pct),
+      opts,
+      explain('Waarom lichter beginnen?', el('p', { class: 'mb0' },
+        'Je spieren onthouden meer dan je pezen en gewrichten. Direct terug naar je oude gewichten is de snelste route naar een blessure. '
+        + 'Begin lichter: zodra je RIR laat zien dat het te makkelijk is, zet de app het gewicht vanzelf in stappen omhoog — en dat gaat een stuk sneller dan de eerste keer opbouwen.'))));
+    redraw = () => {
+      pct.textContent = Math.round(factor * 100) + '%';
+      opts.querySelectorAll('button').forEach(b =>
+        b.classList.toggle('btn-secondary', Number(b.dataset.f) === factor));
+      for (const { row, m } of Object.values(checks)) {
+        if (row) row.textContent = `${Math.round(m.weight * factor * 2) / 2} kg × ${m.reps}`
+          + (factor !== 1 ? `  (was ${m.weight} kg)` : '') + ` — uit "${m.name}"${m.date ? ` · ${m.date}` : ''}`;
+      }
+    };
+  }
 
   if (res.matched.length) {
     const card = el('div', { class: 'card raised' });
     for (const m of res.matched) {
       // Ziet het gewicht er onmogelijk uit, dan standaard uit laten staan.
       const cb = el('input', { type: 'checkbox', checked: !m.odd });
-      checks[m.id] = { cb, m };
+      const row = el('div', { class: 'tiny dim' }, `${m.weight} kg × ${m.reps} — uit "${m.name}"${m.date ? ` · ${m.date}` : ''}`);
+      checks[m.id] = { cb, m, row };
       card.append(el('label', { class: 'habit', style: 'cursor:pointer' }, cb,
         el('div', { class: 'grow' },
           el('div', {}, m.nameNL),
-          el('div', { class: 'tiny dim' }, `${m.weight} kg × ${m.reps} — uit "${m.name}"${m.date ? ` · ${m.date}` : ''}`),
+          row,
           m.odd ? el('div', { class: 'tiny', style: 'color:var(--warn)' }, '⚠ ' + m.odd) : null)));
     }
     box.append(card);
@@ -269,12 +297,16 @@ function openStrongImport(text, ctx) {
       res.unmatched.map(u => u.name).join(', ') + '. Deze staan niet in je schema of heten net anders. Je kunt ze handmatig invullen bij de eerste set.')));
   }
 
+  redraw();
+
   if (res.matched.length) {
     box.append(el('button', { class: 'btn-primary btn-block mt', onclick: () => {
       const pick = Object.values(checks).filter(c => c.cb.checked).map(c => c.m);
       if (!pick.length) return toast('Niets aangevinkt');
-      applyBaselines(pick);
-      close(); toast(`${pick.length} startgewichten overgenomen`); ctx?.render?.();
+      applyBaselines(factor === 1 ? pick : scaleBaselines(pick, factor));
+      close();
+      toast(`${pick.length} startgewichten overgenomen${factor !== 1 ? ` op ${Math.round(factor * 100)}%` : ''}`);
+      ctx?.render?.();
     } }, '✓ Overnemen'));
   }
 }
