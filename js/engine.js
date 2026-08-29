@@ -224,7 +224,7 @@ export function fitToTime(slots, maxMin) {
 // Geen vaste weekdagen meer: A→B→C-cyclus op basis van wat er echt gedaan is.
 // Gemiste sessies schuiven vanzelf op; doel = 3 zware sessies per week, liefst om de dag.
 
-const HEAVY_CYCLE = ['sessionA', 'sessionB', 'sessionC'];
+const HEAVY_CYCLE = ['sessionA', 'sessionB'];
 
 function heavyLogs() {
   return get().logs
@@ -556,7 +556,10 @@ export function buildWorkout(session, adjust = { setFactor: 1, rirBonus: 0, rest
     const ex = byId[slot.ex];
     const sets = Math.max(1, Math.round(slot.sets * (adjust.setFactor ?? 1)));
     const rir = Math.min(5, slot.rir + (adjust.rirBonus ?? 0));
-    const rest = slot.rest + (adjust.restBonus ?? 0);
+    // Rust boven de 90 seconden levert geen meetbare extra spiergroei op
+    // (Singer 2024). Langer rusten bij vermoeidheid mag, maar we kappen het af:
+    // 3,5 minuut tussen sets eet je hele tijdsbudget op.
+    const rest = Math.min(slot.rest + (adjust.restBonus ?? 0), 165);
     return { ...slot, exercise: ex, sets, rir, rest, suggestion: suggestWeight(slot.ex, slot.reps) };
   });
   if (timeCapMin) {
@@ -935,7 +938,7 @@ function roundToStep(w) {
 
 /** Warm-up ramp voor de eerste zware oefening met gewicht. */
 export function warmupFor(slots) {
-  const first = slots.find(s => s.suggestion?.weight && s.suggestion.weight >= 10);
+  const first = slots.find(s => s.suggestion?.weight && s.suggestion.weight >= 6);
   if (!first) return null;
   const w = first.suggestion.weight;
   return {
@@ -1281,6 +1284,12 @@ function csvRows(text) {
   }
   if (cell || row.length) { row.push(cell); rows.push(row); }
   return rows.filter(r => r.some(x => x.trim()));
+}
+
+/** Puur lichaamsgewicht? Dan heeft een gewicht invullen geen zin. */
+export function isBodyweightOnly(ex) {
+  if (!ex) return false;
+  return ex.equipment.every(q => ['bodyweight', 'pullUpBar', 'bench', 'inclineBench', 'abWheel'].includes(q));
 }
 
 /** Gelijkwaardige alternatieven voor een oefening (zelfde spiergroep, jouw materiaal). */

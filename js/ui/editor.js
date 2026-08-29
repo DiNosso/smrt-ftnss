@@ -39,7 +39,7 @@ export function openEditor(ctx) {
     app.innerHTML = '';
     app.append(el('div', { class: 'player-head spread' },
       el('button', { class: 'btn-sm btn-ghost', onclick: drawList }, '‹ Sessies'),
-      el('h4', { class: 'mb0' }, session.name.split('·')[1]?.trim() || session.name),
+      el('h4', { class: 'mb0' }, session.short || session.name),
       el('span', {})));
 
     const listCard = el('div', { class: 'card' });

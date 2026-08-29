@@ -204,10 +204,27 @@ export async function renderToday(app, ctx) {
         update(st => { st.swaps[iso] = 'rest'; }); ctx.render();
       } }, '🚫 Kan niet'),
       Object.values(SESSIONS).filter(s => s.id !== 'rest').map(s =>
-        el('button', { class: 'btn-sm', onclick: () => { update(st => { st.swaps[iso] = s.id; }); ctx.render(); } }, s.name.split('·')[1]?.trim() || s.name)),
+        el('button', { class: 'btn-sm', onclick: () => { update(st => { st.swaps[iso] = s.id; }); ctx.render(); } }, s.short || s.name.split('·')[1]?.trim() || s.name)),
       get().swaps[iso] ? el('button', { class: 'btn-sm btn-ghost', style: 'color:var(--accent)', onclick: () => { update(st => { delete st.swaps[iso]; }); ctx.render(); } }, '↺ Automatisch') : null),
     explain('Hoe werkt dit?', el('p', { class: 'mb0' },
       'Sla je een zware sessie over, dan verdwijnt die niet: de wachtrij schuift op naar de eerstvolgende dag waarop je genoeg tijd hebt én je spieren hersteld zijn. Een vrije workout telt gewoon mee in je volume en herstel.'))));
+
+  // ---------- Onafgemaakte training ----------
+  const bezig = get().activeWorkout;
+  if (bezig && (Date.now() - bezig.savedAt) < 6 * 3600 * 1000 && bezig.sets?.some(x => x.done)) {
+    const sess = SESSIONS[bezig.sessionId];
+    const af = bezig.sets.filter(x => x.done).length;
+    app.append(el('div', { class: 'card', style: 'border-color:var(--accent)' },
+      cardHead(ICO.bolt, 'Training nog bezig'),
+      el('p', { class: 'tiny dim' }, `${sess?.name || 'Workout'} — ${af} van de ${bezig.sets.length} sets ingevuld.`),
+      el('div', { class: 'row' },
+        el('button', { class: 'btn-primary grow', onclick: () => openWorkout(sess, bezig.adjust, ctx, bezig.timeCap) }, '▶ Hervatten'),
+        el('button', { class: 'btn-sm', onclick: () => {
+          if (confirm('Deze training weggooien? De ingevulde sets verdwijnen dan definitief.')) {
+            update(st => { st.activeWorkout = null; }); ctx.render();
+          }
+        } }, 'Weggooien'))));
+  }
 
   // ---------- Plateaus ----------
   // Stond eerst alleen op Progressie; je moest er zelf naar gaan zoeken.
@@ -491,8 +508,11 @@ function enablePullToRefresh(onRefresh) {
   const ind = el('div', { class: 'ptr' }, '⟳ Loslaten om te verversen');
   document.body.append(ind);
   let startY = null, pulling = false;
+  // Alleen op het startscherm. Tijdens een training mag dit nooit afgaan:
+  // een herteken gooit je lopende sets van het scherm.
+  const opStartscherm = () => !!document.querySelector('.syncbar') && !document.querySelector('.player-head');
   addEventListener('touchstart', e => {
-    startY = (document.scrollingElement?.scrollTop || 0) <= 0 ? e.touches[0].clientY : null;
+    startY = (opStartscherm() && (document.scrollingElement?.scrollTop || 0) <= 0) ? e.touches[0].clientY : null;
   }, { passive: true });
   addEventListener('touchmove', e => {
     if (startY == null) return;
@@ -500,7 +520,8 @@ function enablePullToRefresh(onRefresh) {
     if (d > 12) { pulling = true; ind.style.transform = `translateY(${Math.min(d * .5, 64)}px)`; ind.classList.add('on'); }
   }, { passive: true });
   addEventListener('touchend', () => {
-    if (pulling) { ind.classList.remove('on'); ind.style.transform = ''; onRefresh(); }
+    if (pulling && opStartscherm()) { ind.classList.remove('on'); ind.style.transform = ''; onRefresh(); }
+    else { ind.classList.remove('on'); ind.style.transform = ''; }
     startY = null; pulling = false;
   });
 }

@@ -3,8 +3,9 @@
 
 import { el, videoBlock, demoBlock, visualBlock, fmtTime, toast, sheet, confetti, cardHead, explain, ICO } from './common.js';
 import { get, S, update, todayISO } from '../state.js';
-import { buildWorkout, recordProgress, detectPRs, warmupFor, alternativesFor, suggestWeight, nextWeight, stepDown, lastSetCue, calibrate, estimateFromKnown } from '../engine.js';
+import { buildWorkout, recordProgress, detectPRs, warmupFor, alternativesFor, suggestWeight, nextWeight, stepDown, lastSetCue, calibrate, estimateFromKnown, isBodyweightOnly } from '../engine.js';
 import { byId, MUSCLE_NL } from '../data/exercises.js';
+import { WARMUP } from '../data/program.js';
 import { openTV } from './cast.js';
 import * as icu from '../icu.js';
 
@@ -14,20 +15,40 @@ async function keepAwake() {
 }
 function releaseWake() { wakeLock?.release?.(); wakeLock = null; }
 
-function beep() {
+// iOS staat geluid alleen toe vanuit een AudioContext die tijdens een
+// gebruikersactie is aangemaakt. Daarom één keer aanmaken bij de start van de
+// workout en hergebruiken, in plaats van bij elke piep een nieuwe.
+let audio = null;
+export function primeAudio() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const o = ctx.createOscillator(), g = ctx.createGain();
-    o.connect(g); g.connect(ctx.destination);
-    o.frequency.value = 880; g.gain.value = 0.15;
-    o.start(); o.stop(ctx.currentTime + 0.35);
-  } catch { /* ok */ }
+    audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+    if (audio.state === 'suspended') audio.resume();
+  } catch { audio = null; }
+}
+function tone(freq = 880, dur = 0.12, vol = 0.16) {
+  try {
+    if (!audio) return;
+    if (audio.state === 'suspended') audio.resume();
+    const o = audio.createOscillator(), g = audio.createGain();
+    o.connect(g); g.connect(audio.destination);
+    o.type = 'sine';
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(vol, audio.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + dur);
+    o.start(); o.stop(audio.currentTime + dur);
+  } catch { /* geluid is nooit noodzakelijk */ }
+}
+function tick() { tone(660, 0.09, 0.12); navigator.vibrate?.(30); }
+function beep() {
+  tone(990, 0.18, 0.2);
+  setTimeout(() => tone(1320, 0.28, 0.2), 190);
   navigator.vibrate?.([200, 80, 200]);
 }
 
 export function openWorkout(session, adjust, ctx, timeCap = null) {
   const app = document.getElementById('app');
   keepAwake();
+  primeAudio();
 
   const startedAt = Date.now();
   const slots = buildWorkout(session, adjust, timeCap);
@@ -41,6 +62,36 @@ export function openWorkout(session, adjust, ctx, timeCap = null) {
   slots.forEach((slot, si) => {
     for (let i = 1; i <= slot.sets; i++) sets.push({ ex: slot.ex, slotIdx: si, set: i, reps: null, weight: slot.suggestion.weight, rir: null, done: false });
   });
+
+  /**
+   * Bewaar de lopende training na elke wijziging. Sluit de app af, valt de
+   * telefoon in slaap of gaat er iets mis met het scherm, dan staat alles er
+   * bij de volgende start nog. Kost niets en voorkomt het ergste dat er in een
+   * trainingsapp kan gebeuren: je sets kwijtraken.
+   */
+  function persist() {
+    update(st => {
+      st.activeWorkout = {
+        sessionId: session.id, startedAt, savedAt: Date.now(),
+        adjust, timeCap,
+        sets: sets.map(x => ({ ex: x.ex, slotIdx: x.slotIdx, set: x.set, reps: x.reps, weight: x.weight, rir: x.rir, done: x.done })),
+        slotEx: slots.map(sl => sl.ex),
+      };
+    });
+  }
+  function clearPersisted() { update(st => { st.activeWorkout = null; }); }
+
+  // Eerder afgebroken training van vandaag? Zet de ingevulde sets terug.
+  const saved = get().activeWorkout;
+  if (saved && saved.sessionId === session.id && (Date.now() - saved.savedAt) < 6 * 3600 * 1000) {
+    for (const old of saved.sets) {
+      const cur = sets.find(x => x.slotIdx === old.slotIdx && x.set === old.set);
+      if (cur) Object.assign(cur, { reps: old.reps, weight: old.weight, rir: old.rir, done: old.done });
+    }
+    if (saved.sets.some(x => x.done)) {
+      setTimeout(() => toast(`Training hervat — ${saved.sets.filter(x => x.done).length} sets stonden al ingevuld`), 400);
+    }
+  }
 
   // superset-partners: volgende slot met dezelfde ss-tag
   const partnerOf = si => {
@@ -80,6 +131,7 @@ export function openWorkout(session, adjust, ctx, timeCap = null) {
       restState = { left: remain, total };
       timeEl.textContent = fmtTime(Math.max(0, remain));
       vc.setAttribute('stroke-dashoffset', (C * (1 - Math.max(0, remain) / total)).toFixed(1));
+      if (remain === 3 || remain === 2 || remain === 1) tick();
       if (remain <= 0) { beep(); stopRest(); }
     }, 1000);
   }
@@ -103,7 +155,7 @@ export function openWorkout(session, adjust, ctx, timeCap = null) {
       setNo: nextSet.set,
       setsInExercise: inEx.length,
       scheme: `${slot.reps[0]}-${slot.reps[1]} reps`,
-      weightText: nextSet.weight ? `${nextSet.weight} kg · RIR ${slot.rir}` : `RIR ${slot.rir}`,
+      weightText: nextSet.weight ? `${nextSet.weight} kg · mik op RIR ${slot.rir}` : `mik op RIR ${slot.rir}`,
       rest: slot.rest,
       resting: !!restState,
       restLeft: restState?.left ?? 0,
@@ -116,7 +168,7 @@ export function openWorkout(session, adjust, ctx, timeCap = null) {
   function toggleTV() {
     if (tv) { tv.close(); tv = null; return; }
     tv = openTV(tvState, { onClose: () => { tv = null; } });
-    toast('📺 TV-modus aan — cast/spiegel nu je scherm naar de TV');
+    toast('📺 TV-weergave aan');
   }
 
   function renderAll() {
@@ -129,14 +181,24 @@ export function openWorkout(session, adjust, ctx, timeCap = null) {
     }, 1000);
 
     const progBar = el('div', { class: 'player-progress' }, el('i', { style: 'width:0%' }));
-    const tvBtn = el('button', { class: 'btn-sm btn-ghost', title: 'TV-modus' });
-    tvBtn.innerHTML = ICO.tv;
-    tvBtn.style.color = 'var(--accent)';
-    tvBtn.addEventListener('click', toggleTV);
+    // Een webapp kan zelf geen AirPlay starten; dat doet iOS. De knop zet de
+    // tv-weergave aan en legt uit hoe je spiegelt — anders is niet te raden
+    // wat het icoontje doet.
+    const tvBtn = el('button', { class: 'btn-sm', style: 'color:var(--accent);border-color:rgba(56,237,208,.4)' });
+    tvBtn.innerHTML = ICO.tv + ' <span style="margin-left:4px">TV</span>';
+    tvBtn.addEventListener('click', () => {
+      if (tv) { toggleTV(); return; }
+      openCastHelp();
+    });
     app.append(el('div', { class: 'player-head' },
       el('div', { class: 'spread' },
-        el('button', { class: 'btn-sm btn-ghost', onclick: () => { if (confirm('Workout afbreken? Ingevoerde sets gaan verloren.')) { stopRest(); tv?.close(); releaseWake(); ctx.render(); } } }, '‹ Terug'),
-        el('h4', { class: 'mb0' }, session.name.split('·')[1]?.trim() || session.name),
+        el('button', { class: 'btn-sm btn-ghost', onclick: () => {
+          const ingevuld = sets.filter(x => x.done).length;
+          if (!ingevuld || confirm(`Terug naar het startscherm?\n\nJe ${ingevuld} ingevulde sets blijven bewaard — je kunt de training later gewoon hervatten.`)) {
+            stopRest(); tv?.close(); releaseWake(); ctx.render();
+          }
+        } }, '‹ Terug'),
+        el('h4', { class: 'mb0' }, session.short || session.name.split('·')[1]?.trim() || session.name),
         el('div', { class: 'row', style: 'gap:4px' }, tvBtn, clock)),
       progBar));
     refreshProgress = () => {
@@ -145,20 +207,12 @@ export function openWorkout(session, adjust, ctx, timeCap = null) {
     };
     refreshProgress();
 
-    if (session.warmup) {
-      app.append(el('div', { class: 'card', style: 'border-color:var(--secondary)' },
-        el('h5', {}, '🔥 Warming-up'), el('p', { class: 'tiny dim mb0' }, session.warmup)));
+    // Begeleide warming-up: stap voor stap, met timer per onderdeel.
+    const ramp = session.type !== 'snack' ? warmupFor(slots) : null;
+    if (session.type !== 'snack') {
+      app.append(warmupCard(ramp));
     }
 
-    // automatische warm-up ramp voor de eerste zware lift
-    const ramp = session.type !== 'snack' ? warmupFor(slots) : null;
-    if (ramp) {
-      app.append(el('div', { class: 'card', style: 'border-color:var(--secondary)' },
-        el('h5', {}, `🏋️ Opwarmsets · ${ramp.forExercise}`),
-        el('p', { class: 'tiny dim mb0' },
-          ramp.sets.map(s => `${s.reps} reps × ${s.weight} kg (${s.label})`).join('  →  ') +
-          `  →  dan je werksets met ${ramp.workWeight} kg. Opwarmsets tellen niet als werkvolume.`)));
-    }
 
     slots.forEach((slot, si) => app.append(slotCard(slot, si)));
 
@@ -166,6 +220,114 @@ export function openWorkout(session, adjust, ctx, timeCap = null) {
       el('button', { class: 'btn-primary btn-block', onclick: finish }, '✓ Workout afronden')));
     markActive();
     window.scrollTo(0, 0);
+  }
+
+  /**
+   * Begeleide warming-up: één onderdeel tegelijk, met aftelklok en demo.
+   * Ingeklapt zodra je klaar bent, zodat het scherm niet vol blijft staan.
+   */
+  function warmupCard(ramp) {
+    const gedaan = new Set();
+    const card = el('div', { class: 'card', style: 'border-color:var(--secondary)' });
+    const kop = el('div', { class: 'spread' },
+      el('h5', { class: 'mb0' }, '🔥 Warming-up'),
+      el('span', { class: 'tiny dim' }, '±7 min'));
+    const lijst = el('div');
+    const klaarBtn = el('button', { class: 'btn-sm btn-block mt' }, 'Warming-up overslaan');
+    let ingeklapt = false;
+
+    const teken = () => {
+      lijst.innerHTML = '';
+      if (ingeklapt) {
+        lijst.append(el('p', { class: 'tiny dim mb0' }, `✓ Warming-up afgerond (${gedaan.size}/${WARMUP.length})`));
+        return;
+      }
+      for (const w of WARMUP) {
+        const isRamp = w.rampSets && ramp;
+        if (w.rampSets && !ramp) continue;
+        const af = gedaan.has(w.id);
+        const rij = el('div', { class: 'wu' + (af ? ' done' : '') });
+        const tijd = el('span', { class: 'wutime' }, `${w.sec}s`);
+        const startKnop = el('button', { class: 'btn-sm' }, af ? '✓' : '▶');
+        startKnop.addEventListener('click', () => {
+          if (af) { gedaan.delete(w.id); teken(); return; }
+          startWarmupTimer(w, tijd, () => { gedaan.add(w.id); teken(); });
+        });
+        const ex = w.ex ? byId[w.ex] : null;
+        // DOM-append maakt van null de tekst "null" — dus eerst filteren.
+        const beeld = ex ? visualBlock(ex, { tag: '' }) : null;
+        rij.append(...[
+          el('div', { class: 'wuhead' },
+            el('span', { class: 'wufase' }, w.fase),
+            el('span', { class: 'grow', style: 'font-size:.92rem' }, w.name),
+            tijd, startKnop),
+          el('div', { class: 'tiny dim' }, isRamp
+            ? `${ramp.sets.map(x => `${x.reps} reps × ${x.weight} kg`).join('  →  ')}  →  werksets met ${ramp.workWeight} kg`
+            : w.detail),
+          beeld,
+          el('div', { class: 'tiny', style: 'color:var(--primary);margin-top:3px' }, w.why),
+        ].filter(Boolean));
+        lijst.append(rij);
+      }
+    };
+    klaarBtn.addEventListener('click', () => {
+      ingeklapt = !ingeklapt;
+      klaarBtn.textContent = ingeklapt ? 'Warming-up weer tonen' : 'Warming-up overslaan';
+      teken();
+    });
+    teken();
+    card.append(kop, lijst, klaarBtn);
+    return card;
+  }
+
+  /** Aftelklok voor één warming-up-onderdeel. */
+  function startWarmupTimer(w, tijdEl, klaar) {
+    let rest = w.sec;
+    tijdEl.classList.add('running');
+    const iv = setInterval(() => {
+      rest -= 1;
+      tijdEl.textContent = `${Math.max(0, rest)}s`;
+      if (rest === 3 || rest === 2 || rest === 1) tick();
+      if (rest <= 0) {
+        clearInterval(iv);
+        tijdEl.classList.remove('running');
+        beep();
+        klaar();
+      }
+    }, 1000);
+  }
+
+  /** Uitleg hoe je naar de tv spiegelt, plus de tv-weergave aanzetten. */
+  function openCastHelp() {
+    const start = el('button', { class: 'btn-primary btn-block mt' }, '📺 TV-weergave aanzetten');
+    const close = sheet(el('div', {},
+      el('h3', {}, 'Naar je TV'),
+      el('p', { class: 'tiny dim' }, 'De app kan zelf geen verbinding met je TV maken — dat doet je telefoon. Je spiegelt je scherm, en de app schakelt dan over naar een weergave die van een afstand leesbaar is.'),
+      el('div', { class: 'card raised' },
+        el('h5', { class: 'mb0' }, 'Apple TV / AirPlay'),
+        el('p', { class: 'tiny dim mb0' }, '1. Veeg van rechtsboven omlaag voor het Bedieningspaneel\n2. Tik op Schermspiegeling\n3. Kies je Apple TV')),
+      el('div', { class: 'card raised' },
+        el('h5', { class: 'mb0' }, 'Chromecast / Google TV'),
+        el('p', { class: 'tiny dim mb0' }, 'Open de Google Home-app → je TV → Mijn scherm casten.')),
+      el('p', { class: 'tiny dim' }, 'Zet de spiegeling aan en tik daarna hieronder. Je telefoon blijft gewoon werken om je sets af te vinken.'),
+      start));
+    start.addEventListener('click', () => { close(); toggleTV(); });
+  }
+
+  /** Wat is RIR, en hoe schat je het? */
+  function openRirHelp() {
+    sheet(el('div', {},
+      el('h3', {}, 'Hoeveel had je er nog over?'),
+      el('p', { class: 'tiny dim' }, 'Na elke set vul je in hoeveel herhalingen je er nog bij had gekund met goede techniek. Dat heet RIR — reps in reserve. Het is het belangrijkste getal in de app: jouw antwoord bepaalt het gewicht van de volgende keer.'),
+      el('div', { class: 'card raised' },
+        el('div', { class: 'spread', style: 'padding:5px 0' }, el('b', {}, '0'), el('span', { class: 'tiny dim' }, 'Er kwam er echt geen meer bij')),
+        el('div', { class: 'spread', style: 'padding:5px 0' }, el('b', {}, '1'), el('span', { class: 'tiny dim' }, 'Eentje had nog gekund, zwaar')),
+        el('div', { class: 'spread', style: 'padding:5px 0' }, el('b', {}, '2'), el('span', { class: 'tiny dim' }, 'Twee erbij, laatste rep vertraagde')),
+        el('div', { class: 'spread', style: 'padding:5px 0' }, el('b', {}, '3+'), el('span', { class: 'tiny dim' }, 'Voelde nog comfortabel — te licht'))),
+      explain('Ik vind het moeilijk in te schatten', el('div', {},
+        el('p', {}, 'Dat is normaal, en onderzoek laat iets nuttigs zien: vrijwel iedereen schat er ongeveer één rep naast, en altijd dezelfde kant op. Mensen dénken dat ze dichter bij spierfalen zitten dan ze werkelijk zijn.'),
+        el('p', {}, 'Praktisch: zeg je "nog 2 over", probeer er dan tóch één extra. Lukt dat makkelijk, dan zat je op 3.'),
+        el('p', { class: 'mb0' }, 'Het schatten wordt bovendien véél nauwkeuriger dicht bij spierfalen. Daarom staat er in elke sessie één set op RIR 0 — die dient als ijkpunt. Ga daar een keer echt door tot er niks meer komt; daarna weet je hoe de rest voelt.')))));
   }
 
   function slotCard(slot, si) {
@@ -176,7 +338,8 @@ export function openWorkout(session, adjust, ctx, timeCap = null) {
       el('h4', { class: 'mb0' }, ex?.nameNL || slot.ex),
       el('div', {},
         slot.ss ? el('span', { class: 'pill on', style: 'margin-right:6px' }, 'Superset') : null,
-        el('span', { class: 'pill' }, `RIR ${slot.rir}`))));
+        el('span', { class: 'pill', style: 'cursor:pointer', onclick: openRirHelp },
+          `doel: ${slot.rir} over`))));
     card.append(el('div', { class: 'tiny dim', style: 'margin-bottom:10px' },
       `${slot.sets} sets × ${slot.reps[0]}-${slot.reps[1]} reps · rust ${fmtTime(slot.rest)}`));
 
@@ -211,7 +374,7 @@ export function openWorkout(session, adjust, ctx, timeCap = null) {
 
     // uitleg + wissel
     const actions = el('div', { class: 'row mt' },
-      el('button', { class: 'btn-sm btn-ghost', onclick: () => openSwap(si) }, '⇄ Wissel'),
+      el('button', { class: 'btn-sm', style: 'border-color:rgba(154,224,212,.4);color:var(--primary)', onclick: () => openSwap(si) }, '⇄ Andere oefening'),
       ex?.video ? el('a', { class: 'btn btn-sm btn-ghost', style: 'text-decoration:none', href: `https://www.youtube.com/watch?v=${ex.video}`, target: '_blank', rel: 'noopener' },
         ex.videoSrc === 'bb' ? '▶ Korte clip ↗' : '▶ Video ↗') : null);
     card.append(actions);
@@ -224,7 +387,7 @@ export function openWorkout(session, adjust, ctx, timeCap = null) {
     const slotRows = [];
     const hintEl = el('div', { class: 'tiny mt', style: 'color:var(--warn);display:none' });
     card.append(el('div', { class: 'mt tiny dim', style: 'display:grid;grid-template-columns:40px 1fr 1fr 54px 46px;gap:7px;text-align:center' },
-      el('span', {}), el('span', {}, 'kg'), el('span', {}, 'reps'), el('span', {}, 'RIR'), el('span', {})));
+      el('span', {}), el('span', {}, 'kg'), el('span', {}, 'reps'), el('span', {}, 'over'), el('span', {})));
     card.append(el('div', {}, mySets.map(s => setRow(s, slot, si, slotRows, hintEl))), hintEl);
     return card;
   }
@@ -275,22 +438,26 @@ export function openWorkout(session, adjust, ctx, timeCap = null) {
   }
 
   function setRow(s, slot, si, slotRows, hintEl) {
-    const isBw = slot.suggestion.weight == null;
-    const wIn = el('input', { type: 'number', inputmode: 'decimal', step: '0.5', placeholder: isBw ? 'lich.' : 'kg', value: s.weight ?? '' });
+    // Puur lichaamsgewicht: dan is een kg-veld alleen maar verwarrend.
+    const isBw = isBodyweightOnly(slot.exercise);
+    const wIn = isBw
+      ? el('span', { class: 'tiny dim', style: 'text-align:center' }, 'eigen gew.')
+      : el('input', { type: 'number', inputmode: 'decimal', step: '0.5', placeholder: 'kg', value: s.weight ?? '' });
     const rIn = el('input', { type: 'number', inputmode: 'numeric', placeholder: `${slot.reps[0]}-${slot.reps[1]}`, value: s.reps ?? '' });
     const rirIn = el('select', { style: 'padding:10px 4px;text-align:center' },
       el('option', { value: '' }, '·'),
       [0, 1, 2, 3, 4, 5].map(v => el('option', { value: v, selected: s.rir === v }, String(v))));
     const btn = el('button', { class: 'done-btn' + (s.done ? ' done' : '') }, '✓');
-    wIn.addEventListener('input', () => { s.weight = wIn.value === '' ? null : parseFloat(wIn.value); });
-    rIn.addEventListener('input', () => { s.reps = rIn.value === '' ? null : parseInt(rIn.value, 10); });
-    rirIn.addEventListener('change', () => { s.rir = rirIn.value === '' ? null : parseInt(rirIn.value, 10); });
+    if (!isBw) wIn.addEventListener('input', () => { s.weight = wIn.value === '' ? null : parseFloat(wIn.value); persist(); });
+    rIn.addEventListener('input', () => { s.reps = rIn.value === '' ? null : parseInt(rIn.value, 10); persist(); });
+    rirIn.addEventListener('change', () => { s.rir = rirIn.value === '' ? null : parseInt(rirIn.value, 10); persist(); });
     btn.addEventListener('click', () => {
       if (!s.done) {
         if (s.reps == null) { s.reps = slot.reps[1]; rIn.value = s.reps; } // snel loggen: bovengrens
         if (s.rir == null) { s.rir = slot.rir; rirIn.value = s.rir; }     // aanname: volgens plan
         s.done = true; btn.classList.add('done');
         rowEl.classList.add('filled');
+        persist();
         navigator.vibrate?.(12);
         refreshProgress(); markActive();
         autoRegulate(s, slot, slotRows, hintEl);
@@ -300,7 +467,7 @@ export function openWorkout(session, adjust, ctx, timeCap = null) {
         } else {
           startRest(slot.rest);
         }
-      } else { s.done = false; btn.classList.remove('done'); }
+      } else { s.done = false; btn.classList.remove('done'); persist(); }
     });
     const rowEl = el('div', { class: 'setrow', style: 'grid-template-columns:44px 1fr 1fr 54px 48px' },
       el('span', { class: 'setnum' }, `Set ${s.set}`), wIn, rIn, rirIn, btn);
@@ -321,24 +488,33 @@ export function openWorkout(session, adjust, ctx, timeCap = null) {
   function openSwap(si) {
     const slot = slots[si];
     const inSession = slots.map(s => s.ex);
-    const alts = alternativesFor(slot.ex, inSession);
-    const box = el('div', {}, el('h3', {}, 'Wissel oefening'),
-      el('p', { class: 'tiny dim' }, `Alternatieven voor ${slot.exercise?.nameNL} — zelfde spiergroep, met jouw materiaal. Sets en reps blijven staan.`));
+    const huidig = slot.exercise?.difficulty ?? 3;
+    // Makkelijkere varianten bovenaan: de meest voorkomende reden om te
+    // wisselen is dat een oefening (nog) niet lukt.
+    const alts = alternativesFor(slot.ex, inSession)
+      .sort((a, b) => ((a.difficulty ?? 3) - huidig) - ((b.difficulty ?? 3) - huidig) || (a.difficulty ?? 3) - (b.difficulty ?? 3));
+    const box = el('div', {}, el('h3', {}, 'Andere oefening'),
+      el('p', { class: 'tiny dim' }, `In plaats van ${slot.exercise?.nameNL} — zelfde spiergroep, met jouw materiaal. Je sets en reps blijven staan.`));
     if (!alts.length) box.append(el('p', { class: 'dim' }, 'Geen alternatieven gevonden met je huidige materiaal.'));
     const close = sheet(box);
     for (const alt of alts) {
+      const d = alt.difficulty ?? 3;
+      const label = d < huidig ? el('span', { class: 'pill good' }, 'makkelijker')
+        : d > huidig ? el('span', { class: 'pill warn' }, 'zwaarder')
+        : el('span', { class: 'pill' }, 'vergelijkbaar');
       box.append(el('div', { class: 'exrow', onclick: () => {
         slots[si] = { ...slot, ex: alt.id, exercise: alt, suggestion: suggestWeight(alt.id, slot.reps), ss: undefined, note: null };
         for (const s of sets) {
           if (s.slotIdx === si && !s.done) { s.ex = alt.id; s.weight = slots[si].suggestion.weight; }
         }
+        persist();
         close(); renderAll();
         toast(`⇄ Gewisseld naar ${alt.nameNL}`);
       } },
         el('div', { class: 'grow' },
           el('div', {}, alt.nameNL),
-          el('div', { class: 'mus' }, `${MUSCLE_NL[alt.muscle] || alt.muscle} · moeilijkheid ${alt.difficulty || '?'}/5`)),
-        el('span', { class: 'dim' }, alt.video ? '🎬' : '›')));
+          el('div', { class: 'mus' }, `${MUSCLE_NL[alt.muscle] || alt.muscle} · ${'●'.repeat(d)}${'○'.repeat(5 - d)}`)),
+        label));
     }
   }
 
@@ -383,6 +559,7 @@ export function openWorkout(session, adjust, ctx, timeCap = null) {
       update(st => {
         st.logs.push(log);
         for (const [ex, b] of Object.entries(best)) st.lastWeights[ex] = { weight: b.weight, reps: b.reps, date: iso };
+        st.activeWorkout = null;   // opgeslagen, dus niets meer te hervatten
       });
       closeSheet();
 

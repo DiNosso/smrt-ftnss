@@ -12,55 +12,46 @@ export const SESSIONS = {
   sessionA: {
     id: 'sessionA',
     type: 'heavy',
-    name: 'Sessie A · Borst & Triceps',
-    focus: ['chest', 'triceps'],
-    durationMin: 50,
-    description: 'Het zware drukwerk. Dumbbell presses met volledige rust (2-3 min) voor maximale mechanische spanning — het wetenschappelijk optimum uit je rapport.',
-    warmup: 'Vijf minuten: armzwaaien, band pull-aparts (15x licht), 1 lichte opwarmset per eerste oefening.',
+    name: 'Sessie A · Vol lichaam',
+    short: 'Vol lichaam A',
+    focus: ['quadriceps', 'hamstrings', 'chest', 'back', 'shoulders', 'biceps', 'core'],
+    durationMin: 52,
+    description: 'Vol lichaam in één sessie. Bij twee keer per week is dat de enige indeling waarbij elke spiergroep genoeg volume én genoeg frequentie krijgt — een split komt bij 2x/week neer op minder dan één keer per week per spiergroep.',
+    warmup: null,
     slots: [
-      { ex: 'chest_dumbbell_bench_press', sets: 4, reps: [6, 10], rir: 1, rest: 180, note: 'Hoofdlift. Diepe stretch onderin, controle omhoog.' },
-      { ex: 'chest_incline_dumbbell_press', sets: 3, reps: [8, 12], rir: 2, rest: 150, note: 'Bank op 30-45°, bovenborst.' },
-      { ex: 'chest_banded_push_up', sets: 2, reps: [10, 20], rir: 1, rest: 120, note: 'Finisher: constante spanning bovenin dankzij de band.' },
-      { ex: 'triceps_overhead_extension', sets: 3, reps: [10, 15], rir: 2, rest: 120, ss: 'triA', note: 'Lange tricepskop op volledige rek.' },
-      { ex: 'triceps_diamond_push_up', sets: 2, reps: [8, 15], rir: 1, rest: 90, ss: 'triA', note: 'Hoogste triceps-EMG volgens je rapport. Op knieën als het te zwaar wordt.' },
+      { ex: 'quads_goblet_squat', sets: 3, reps: [8, 12], rir: 2, rest: 150, note: 'Zwaarste beenoefening: rustig zakken, borst omhoog.' },
+      { ex: 'hams_stiff_leg_deadlift', sets: 3, reps: [10, 15], rir: 2, rest: 150, note: 'Heupscharnier. Rug recht, dumbbells langs de benen, rek in de hamstrings.' },
+      { ex: 'chest_dumbbell_bench_press', sets: 3, reps: [8, 12], rir: 1, rest: 75, ss: 'ab1', note: 'Superset met de row: terwijl je borst werkt, rust je rug.' },
+      { ex: 'back_dumbbell_row', sets: 3, reps: [10, 12], rir: 1, rest: 75, ss: 'ab1', note: 'Per arm. Trek met je elleboog, niet met je hand.' },
+      { ex: 'shoulders_lateral_raise', sets: 2, reps: [12, 20], rir: 0, rest: 60, ss: 'ab2', note: 'Licht gewicht, tot spierfalen. Dit is je RIR-ijkpunt.' },
+      { ex: 'biceps_hammer_curl', sets: 2, reps: [10, 15], rir: 0, rest: 60, ss: 'ab2', note: 'Neutrale greep, ook goed voor je onderarmen.' },
+      { ex: 'core_ab_wheel', sets: 2, reps: [6, 12], rir: 2, rest: 60, note: 'Vanaf de knieën. Rug mag niet doorzakken.' },
     ],
   },
   sessionB: {
     id: 'sessionB',
     type: 'heavy',
-    name: 'Sessie B · Rug, Schouders & Biceps',
-    focus: ['back', 'shoulders', 'biceps'],
-    durationMin: 50,
-    description: 'De trekdag: houdt je schouders gezond en je vlak in balans met al het drukwerk, plus gericht bicepswerk voor bredere armen.',
-    warmup: 'Vijf minuten: band pull-aparts licht, schouderrol, 1 lichte opwarmset roeien.',
+    name: 'Sessie B · Vol lichaam',
+    short: 'Vol lichaam B',
+    focus: ['quadriceps', 'glutes', 'chest', 'back', 'shoulders', 'triceps'],
+    durationMin: 52,
+    description: 'Dezelfde bewegingspatronen als A, maar met andere oefeningen: eenbenig in plaats van tweebenig, schuin drukken in plaats van vlak. Zo krijgt elke spiergroep twee keer per week een prikkel zonder dat het eentonig wordt.',
+    warmup: null,
     slots: [
-      { ex: 'back_dumbbell_row', sets: 4, reps: [8, 12], rir: 1, rest: 150, note: 'Eén arm, knie op het bankje. Trek naar je heup.' },
-      { ex: 'shoulders_lateral_raise', sets: 3, reps: [12, 20], rir: 1, rest: 90, ss: 'shB', note: 'Licht gewicht, strakke uitvoering — breedte in je schouders.' },
-      { ex: 'back_band_pull_apart', sets: 2, reps: [15, 25], rir: 2, rest: 60, ss: 'shB', note: 'Achterkant schouders, houding.' },
-      { ex: 'biceps_concentration_curl', sets: 3, reps: [8, 12], rir: 1, rest: 120, note: 'Hoogste biceps-EMG uit je rapport. Elleboog tegen je dij, supineer bewust.' },
-      { ex: 'biceps_hammer_curl', sets: 2, reps: [10, 15], rir: 2, rest: 90, note: 'Brachialis en onderarm — visuele breedte.' },
-    ],
-  },
-  sessionC: {
-    id: 'sessionC',
-    type: 'heavy',
-    name: 'Sessie C · Borst, Armen & Benen',
-    focus: ['chest', 'biceps', 'triceps', 'quadriceps'],
-    durationMin: 55,
-    description: 'Tweede borstprikkel van de week (frequentie 2x per spiergroep) plus armen en een fundament van beenwerk zodat het geheel in balans blijft.',
-    warmup: 'Vijf minuten: squat tot diep zonder gewicht, armzwaaien, lichte opwarmset press.',
-    slots: [
-      { ex: 'chest_incline_dumbbell_press', sets: 3, reps: [6, 10], rir: 1, rest: 180, note: 'Nu als hoofdlift — probeer iets zwaarder dan sessie A.' },
-      { ex: 'chest_dumbbell_fly', sets: 2, reps: [10, 15], rir: 2, rest: 120, note: 'Diepe stretch, niet te zwaar.' },
-      { ex: 'quads_goblet_squat', sets: 3, reps: [10, 15], rir: 2, rest: 150, note: 'Met kettlebell of dumbbell. Benen en core.' },
-      { ex: 'biceps_incline_curl', sets: 2, reps: [8, 12], rir: 1, rest: 120, ss: 'armC', note: 'Biceps op maximale rek (bank schuin).' },
-      { ex: 'triceps_band_pushdown', sets: 3, reps: [15, 25], rir: 1, rest: 90, ss: 'armC', note: 'Constante spanning, elleboogvriendelijk finisher-werk.' },
+      { ex: 'quads_bulgarian_split_squat', sets: 3, reps: [8, 12], rir: 2, rest: 120, note: 'Per been. Achterste voet op de bank, gewicht op je voorste hiel.' },
+      { ex: 'glutes_single_leg_hip_thrust', sets: 3, reps: [10, 15], rir: 2, rest: 120, note: 'Schouders op de bank, knijp bovenin je billen aan.' },
+      { ex: 'chest_incline_dumbbell_press', sets: 3, reps: [8, 12], rir: 1, rest: 75, ss: 'ab3', note: 'Bank op 30°. Superset met de row.' },
+      { ex: 'back_dumbbell_row', sets: 3, reps: [12, 15], rir: 1, rest: 75, ss: 'ab3', note: 'Hoger repbereik dan in sessie A.' },
+      { ex: 'shoulders_dumbbell_press', sets: 2, reps: [8, 12], rir: 1, rest: 60, ss: 'ab4', note: 'Zittend met rugsteun.' },
+      { ex: 'triceps_overhead_extension', sets: 2, reps: [10, 15], rir: 0, rest: 60, ss: 'ab4', note: 'Volledige rek boven je hoofd. Laatste set tot spierfalen.' },
+      { ex: 'back_band_pull_apart', sets: 2, reps: [15, 20], rir: 1, rest: 45, note: 'Achterkant schouders — houdt je schouders gezond bij al dat drukwerk.' },
     ],
   },
   snackCore: {
     id: 'snackCore',
     type: 'snack',
     name: 'Snack · Core & Sixpack',
+    short: 'Core',
     focus: ['core'],
     durationMin: 12,
     description: 'Korte core-prikkel. De ab-rollout is volgens je rapport de meest impactvolle investering voor je sixpack (anti-extensie met extreme excentrische rek).',
@@ -75,6 +66,7 @@ export const SESSIONS = {
     id: 'snackPump',
     type: 'snack',
     name: 'Snack · Banden & Pomp',
+    short: 'Banden',
     focus: ['chest', 'triceps', 'back'],
     durationMin: 10,
     description: 'Exercise snack met banden: houdt je stofwisseling actief en telt mee voor je weekvolume, zonder je herstel te belasten.',
@@ -89,6 +81,7 @@ export const SESSIONS = {
     id: 'snackMobility',
     type: 'snack',
     name: 'Snack · Mobiliteit & Herstel',
+    short: 'Mobiliteit',
     focus: ['fullBody'],
     durationMin: 10,
     description: 'Actief herstel: mobiliteit en lichte activatie. Perfect op een vermoeide dag — beweging zonder herstelkosten.',
@@ -112,7 +105,38 @@ export const SESSIONS = {
 };
 
 // Standaard weekindeling (dag 0 = maandag)
-export const WEEK_TEMPLATE = ['sessionA', 'snackCore', 'sessionB', 'snackPump', 'sessionC', 'snackCore', 'rest'];
+/**
+ * Begeleide warming-up volgens RAMP (Raise, Activate, Mobilise, Potentiate).
+ * Ongeveer 7 minuten. Bewust geen lange statische rekoefeningen vooraf: houd
+ * je een spier 60 seconden of langer op rek, dan lever je daarna ~4,6% kracht
+ * in (Behm 2016). Korte, bewegende oefeningen kosten je niets en warmen wel op.
+ * Rekken doe je na de training, niet ervoor.
+ */
+export const WARMUP = [
+  { id: 'wu_raise', name: 'Op temperatuur komen', sec: 90, fase: 'Raise',
+    detail: 'Touwtjespringen, jumping jacks of stevig de trap op en af. Doel: licht buiten adem, warme spieren.',
+    why: 'Spiertemperatuur is het belangrijkste dat een warming-up doet — daar komt vrijwel het hele effect vandaan.' },
+  { id: 'wu_legswing', name: 'Beenzwaaien', sec: 60, fase: 'Mobilise',
+    detail: '8x voor-achter en 8x zijwaarts per been. Rustig groter worden, niet forceren.', ex: null,
+    why: 'Brengt je heupen door hun volledige bereik zonder ze te verzwakken.' },
+  { id: 'wu_squat', name: 'Squat zonder gewicht', sec: 45, fase: 'Mobilise', ex: 'quads_goblet_squat',
+    detail: '10 langzame squats tot een diepte die comfortabel voelt.',
+    why: 'Je oefent het patroon vast in, zonder belasting.' },
+  { id: 'wu_band', name: 'Band pull-apart + doorhalen', sec: 60, fase: 'Activate', ex: 'back_band_pull_apart',
+    detail: '12x pull-apart, daarna 8x de band over je hoofd naar achteren en terug.',
+    why: 'Maakt je schouders klaar voor drukwerk en pakt meteen de achterkant aan die bij thuistrainen vaak achterblijft.' },
+  { id: 'wu_greatest', name: 'Werelds beste stretch', sec: 60, fase: 'Mobilise', ex: 'mobility_worlds_greatest',
+    detail: '5x per kant, in beweging blijven — niet stilhouden.',
+    why: 'Borstwervelkolom en heupbuigers los, precies wat je nodig hebt voor squats en drukken.' },
+  { id: 'wu_pushup', name: 'Push-ups', sec: 45, fase: 'Potentiate', ex: 'chest_push_up',
+    detail: '8-10 rustige push-ups. Op je knieën mag ook.',
+    why: 'Belast het drukpatroon licht voor je aan het echte werk begint.' },
+  { id: 'wu_ramp', name: 'Opwarmsets eerste oefening', sec: 120, fase: 'Potentiate', rampSets: true,
+    detail: null,
+    why: 'Twee opwarmsets is genoeg. Meer kost alleen energie: bij trainen rond de 10 herhalingen maakt extra opwarmen nauwelijks verschil (Enes 2025).' },
+];
+
+export const WEEK_TEMPLATE = ['sessionA', 'snackCore', 'rest', 'sessionB', 'snackPump', 'rest', 'rest'];
 
 // Dagelijkse gewoontes (naast de geplande workout)
 export const DAILY_HABITS = [

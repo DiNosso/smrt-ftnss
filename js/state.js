@@ -1,7 +1,7 @@
 // Eenvoudige localStorage-state. Alles lokaal, niets verlaat je toestel
 // behalve directe calls naar intervals.icu en YouTube.
 
-export const VERSION = '2.7.3';
+export const VERSION = '2.8.0';
 
 const KEY = 'fait.v1';
 
@@ -42,6 +42,7 @@ const DEFAULTS = {
   sportSkips: {},              // {'YYYY-MM-DD': true} vaste sport gaat deze dag niet door
   lastWeights: {},             // {exerciseId: {weight, reps, date}}
   icuCache: null,              // {fetchedAt, wellness: [...], activities: [...]}
+  activeWorkout: null,         // {sessionId, startedAt, savedAt, sets, adjust, timeCap} lopende training
 };
 
 let state = load();

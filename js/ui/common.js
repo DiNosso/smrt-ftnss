@@ -102,7 +102,7 @@ export function clipBlock(exercise, { tag = 'Demo' } = {}) {
     autoplay: true, loop: true, muted: true, playsinline: true, preload: 'metadata',
   });
   v.muted = true; // iOS vereist dit als property, niet alleen als attribuut
-  box.append(v, tag ? el('span', { class: 'tag' }, tag) : null);
+  box.append(...[v, tag ? el('span', { class: 'tag' }, tag) : null].filter(Boolean));
   // Kan de browser de clip niet afspelen (codec, offline, kapot bestand)?
   // Dan stilletjes terugvallen op de 2-frame demo in plaats van een leeg vak.
   v.addEventListener('error', () => {

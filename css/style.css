@@ -569,3 +569,17 @@ body.resting #app { padding-bottom: calc(var(--tabbar-h) + 96px); }
 .fixedrow .sports { display: flex; gap: 5px; flex-wrap: wrap; flex: 1; }
 .fixedrow .sports button { padding: 6px 9px; font-size: .78rem; border-radius: 9px; }
 .fixedrow .sports button.on { background: var(--secondary); border-color: var(--secondary); color: #eafffb; font-weight: 700; }
+
+/* Begeleide warming-up */
+.wu { padding: 10px 0; border-bottom: 1px solid var(--border); }
+.wu:last-child { border-bottom: none; }
+.wu.done { opacity: .5; }
+.wu .wuhead { display: flex; align-items: center; gap: 8px; }
+.wu .wufase {
+  font-size: .58rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--secondary); border: 1px solid rgba(25,135,117,.4); border-radius: 5px; padding: 2px 5px; flex: none;
+}
+.wu .wutime { font-variant-numeric: tabular-nums; font-size: .82rem; color: var(--text-dim); min-width: 38px; text-align: right; }
+.wu .wutime.running { color: var(--accent); font-weight: 700; }
+.wu .demo { max-height: 150px; margin-top: 6px; }
+.wu .demo.clip { max-height: 150px; }
