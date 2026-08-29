@@ -45,7 +45,8 @@
 <body>
 <div id="root"></div>
 <div class="status" id="status">verbinden…</div>
-<script src="js/vendor/mqtt.min.js"></script>
-<script type="module" src="js/tv.js"></script>
+<!-- Eén ES2017-bundel: draait ook op de oudere Chrome van een Chromecast-stick,
+     waar ES-modules en optional chaining het scherm zwart zouden laten. -->
+<script src="js/tv.bundle.js"></script>
 </body>
 </html>

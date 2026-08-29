@@ -1,12 +1,12 @@
 // Service worker: offline-first voor app-bestanden, netwerk voor API's
-const CACHE = 'fait-v24';
+const CACHE = 'fait-v25';
 const ASSETS = [
   './', 'index.html', 'css/style.css', 'manifest.webmanifest',
   'js/app.js', 'js/state.js', 'js/icu.js', 'js/engine.js',
   'js/data/exercises.js', 'js/data/program.js',
   'js/ui/common.js', 'js/ui/today.js', 'js/ui/workout.js', 'js/ui/week.js',
   'js/ui/library.js', 'js/ui/progress.js', 'js/ui/settings.js', 'js/ui/editor.js', 'js/ui/cast.js',
-  'js/tvsync.js', 'js/tv.js', 'js/vendor/mqtt.min.js', 'tv.html', 'cast.html',
+  'js/tvsync.js', 'js/vendor/mqtt.min.js', 'js/tv.bundle.js', 'tv.html', 'cast.html',
   'assets/clips/biceps_hammer_curl.mp4', 'assets/clips/chest_svend_press.mp4',
   'assets/clips/full_kettlebell_swing.mp4', 'assets/clips/glutes_step_up.mp4',
   'assets/clips/hams_stiff_leg_deadlift.mp4', 'assets/clips/quads_bulgarian_split_squat.mp4',

@@ -353,15 +353,19 @@ function tvCard(ctx) {
             if (!confirm('Nieuwe code aanmaken? Je moet je tv dan opnieuw koppelen.')) return;
             update(st => { st.settings.tvPairCode = newPairCode(); }); teken();
           } }, 'Nieuwe code'))),
+      el('div', { class: 'row mt' },
+        el('button', { class: 'btn-sm grow', onclick: () => {
+          const u = tvUrl + '?code=' + code;
+          navigator.clipboard?.writeText(u).then(() => toast('Tv-link gekopieerd')).catch(() => toast(u));
+        } }, 'Kopieer tv-link')),
       explain('Hoe krijg ik dit op mijn tv?', el('div', {},
-        el('p', {}, el('b', {}, 'Chromecast met Google TV of Google TV Streamer'), ' — de beste manier. Installeer daar een browser (TV Bro of Fully Kiosk) en open deze pagina:'),
-        el('p', { style: 'word-break:break-all;color:var(--primary)' }, tvUrl),
-        el('p', {}, 'Voer één keer de koppelcode in met je afstandsbediening. Klaar. Geen castsessie die kan verlopen.'),
-        el('p', {}, el('b', {}, 'Oudere Chromecast (stick zonder menu)'), ' — die kan geen browser draaien. Open op een laptop in Chrome:'),
+        el('p', {}, el('b', {}, '1. Chromecast met Google TV of Google TV Streamer'), ' — de beste manier. Installeer daar een browser (TV Bro of Fully Kiosk) en open de tv-link. Eén keer de code invoeren en klaar; geen castsessie die kan verlopen.'),
+        el('p', {}, el('b', {}, '2. Vanaf je iPhone met URLCast'), ' — een gratis app die precies dit doet: een webpagina naar je Chromecast sturen, waarna je de app mag afsluiten. Let op: URLCast staat sinds 2025 niet meer in de Nederlandse App Store (de maker heeft de EU-handelaarsregistratie nooit gedaan). Met een gratis Amerikaans of Brits Apple-account is hij wel te installeren.'),
+        el('p', {}, el('b', {}, '3. Vanaf een laptop'), ' — open in Chrome:'),
         el('p', { style: 'word-break:break-all;color:var(--primary)' }, new URL('cast.html', location.href).toString()),
-        el('p', {}, 'Vul daar de code in en cast één keer. Daarna mag de laptop dicht — je telefoon stuurt de tv rechtstreeks aan.'),
-        el('p', { class: 'mb0' }, el('b', {}, 'Iets anders?'), ' Elke oude tablet, laptop of Raspberry Pi met een browser werkt ook. Open dezelfde tv-pagina en voer de code in.'))),
-      el('p', { class: 'tiny dim mb0' }, 'Casten vanaf je iPhone zelf kan niet — Apple staat browsers geen toegang tot Chromecast-apparaten toe. Daarom die omweg via een laptop of een browser op de tv.'));
+        el('p', {}, 'Vul de code in en cast één keer. Daarna mag de laptop dicht — je telefoon stuurt de tv rechtstreeks aan.'),
+        el('p', { class: 'mb0' }, el('b', {}, '4. Iets anders?'), ' Elke oude tablet, laptop of Raspberry Pi met een browser werkt ook. Zelfde tv-link, zelfde code.'))),
+      el('p', { class: 'tiny dim mb0' }, 'Casten vanuit een browser op je iPhone kan niet — Apple staat browsers geen toegang tot Chromecast-apparaten toe. Een native app zoals URLCast kan het wel.'));
   };
   teken();
   return card;
