@@ -7,6 +7,7 @@ import { buildWorkout, recordProgress, detectPRs, warmupFor, alternativesFor, su
 import { byId, MUSCLE_NL } from '../data/exercises.js';
 import { WARMUP } from '../data/program.js';
 import { openTV } from './cast.js';
+import { connect as tvConnect } from '../tvsync.js';
 import * as icu from '../icu.js';
 
 let wakeLock = null;
@@ -52,6 +53,14 @@ export function openWorkout(session, adjust, ctx, timeCap = null) {
 
   const startedAt = Date.now();
   const slots = buildWorkout(session, adjust, timeCap);
+  // Tv-scherm: stuur de stand mee zolang de workout open staat.
+  let tvLink = null;
+  if (S().tvEnabled && S().tvPairCode) {
+    tvLink = tvConnect(S().tvPairCode, { role: 'phone' });
+  }
+  const stuurNaarTv = () => { if (!tvLink) return; try { tvLink.publish(tvState()); } catch { /* ok */ } };
+  const tvIv = tvLink ? setInterval(stuurNaarTv, 1000) : null;
+  const stopTv = () => { clearInterval(tvIv); tvLink?.close(); tvLink = null; };
   const iso = todayISO();
   let tv = null;              // actieve TV-modus
   let restState = null;       // {left, total} voor de TV-weergave
@@ -163,6 +172,12 @@ export function openWorkout(session, adjust, ctx, timeCap = null) {
       totalSets: sets.length,
       elapsed: (Date.now() - startedAt) / 1000,
       nextText: nextSlot ? nextSlot.exercise?.nameNL : null,
+      // extra velden voor het losse tv-scherm
+      exId: slot.ex,
+      clip: !!slot.exercise?.clip,
+      demo: !!slot.exercise?.demo,
+      thumb: slot.exercise?.video ? `https://i.ytimg.com/vi/${slot.exercise.video}/hqdefault.jpg` : null,
+      restUntil: restState ? Date.now() + restState.left * 1000 : 0,
     };
   }
   function toggleTV() {
@@ -195,7 +210,7 @@ export function openWorkout(session, adjust, ctx, timeCap = null) {
         el('button', { class: 'btn-sm btn-ghost', onclick: () => {
           const ingevuld = sets.filter(x => x.done).length;
           if (!ingevuld || confirm(`Terug naar het startscherm?\n\nJe ${ingevuld} ingevulde sets blijven bewaard — je kunt de training later gewoon hervatten.`)) {
-            stopRest(); tv?.close(); releaseWake(); ctx.render();
+            stopRest(); tv?.close(); releaseWake(); stopTv(); ctx.render();
           }
         } }, '‹ Terug'),
         el('h4', { class: 'mb0' }, session.short || session.name.split('·')[1]?.trim() || session.name),
@@ -542,7 +557,7 @@ export function openWorkout(session, adjust, ctx, timeCap = null) {
       saveBtn));
 
     saveBtn.addEventListener('click', async () => {
-      releaseWake(); tv?.close(); tv = null;
+      releaseWake(); tv?.close(); tv = null; stopTv();
       const log = {
         id: 'log_' + Date.now(),
         date: iso,

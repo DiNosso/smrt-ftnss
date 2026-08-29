@@ -6,6 +6,7 @@ import { EQUIPMENT_NL } from '../data/exercises.js';
 import * as icu from '../icu.js';
 import { openEditor } from './editor.js';
 import { SPORT_CHOICES } from '../engine.js';
+import { newPairCode } from '../tvsync.js';
 import { parseStrongCsv, applyBaselines, scaleBaselines } from '../engine.js';
 
 const HOME_EQUIPMENT = ['dumbbells', 'bench', 'inclineBench', 'kettlebell', 'resistanceBands', 'abWheel', 'bodyweight'];
@@ -159,6 +160,9 @@ export function renderSettings(app, ctx) {
       + 'Lukt dat niet, dan is er niets aan de hand — bij elke nieuwe oefening kun je in de player '
       + 'met één testset je startgewicht laten uitrekenen.'))));
 
+  // --- TV-scherm ---
+  app.append(tvCard(ctx));
+
   // --- Vaste sportdagen ---
   app.append(el('div', { class: 'card' },
     cardHead(ICO.cal, 'Vaste sportdagen'),
@@ -309,4 +313,56 @@ function openStrongImport(text, ctx) {
       ctx?.render?.();
     } }, '✓ Overnemen'));
   }
+}
+
+/** Koppelcode voor het losse tv-scherm, plus uitleg hoe je het op de tv krijgt. */
+function tvCard(ctx) {
+  const card = el('div', { class: 'card' });
+  const teken = () => {
+    card.innerHTML = '';
+    const code = S().tvPairCode;
+    const aan = !!S().tvEnabled;
+    const tvUrl = new URL('tv.html', location.href).toString();
+
+    card.append(
+      cardHead(ICO.tv, 'TV-scherm'),
+      el('p', { class: 'tiny dim' }, 'Zet je huidige oefening, demo, reps en rusttimer op de tv, terwijl je telefoon vrij blijft om sets af te vinken.'),
+      el('label', { class: 'habit', style: 'cursor:pointer' },
+        el('input', { type: 'checkbox', checked: aan, onchange: e => {
+          update(st => {
+            st.settings.tvEnabled = e.target.checked;
+            if (e.target.checked && !st.settings.tvPairCode) st.settings.tvPairCode = newPairCode();
+          });
+          teken();
+        } }),
+        el('div', { class: 'grow' },
+          el('div', {}, 'Tv-scherm meesturen'),
+          el('div', { class: 'tiny dim' }, 'Alleen actief tijdens een workout.'))));
+
+    if (!aan) return;
+
+    card.append(
+      el('div', { class: 'card raised' },
+        el('div', { class: 'tiny dim' }, 'Koppelcode'),
+        el('div', { style: 'font-family:var(--font-display);font-size:2rem;letter-spacing:.22em;color:var(--accent);text-align:center;padding:6px 0' }, code),
+        el('div', { class: 'row' },
+          el('button', { class: 'btn-sm grow', onclick: () => {
+            navigator.clipboard?.writeText(code).then(() => toast('Code gekopieerd')).catch(() => toast(code));
+          } }, 'Kopieer code'),
+          el('button', { class: 'btn-sm grow', onclick: () => {
+            if (!confirm('Nieuwe code aanmaken? Je moet je tv dan opnieuw koppelen.')) return;
+            update(st => { st.settings.tvPairCode = newPairCode(); }); teken();
+          } }, 'Nieuwe code'))),
+      explain('Hoe krijg ik dit op mijn tv?', el('div', {},
+        el('p', {}, el('b', {}, 'Chromecast met Google TV of Google TV Streamer'), ' — de beste manier. Installeer daar een browser (TV Bro of Fully Kiosk) en open deze pagina:'),
+        el('p', { style: 'word-break:break-all;color:var(--primary)' }, tvUrl),
+        el('p', {}, 'Voer één keer de koppelcode in met je afstandsbediening. Klaar. Geen castsessie die kan verlopen.'),
+        el('p', {}, el('b', {}, 'Oudere Chromecast (stick zonder menu)'), ' — die kan geen browser draaien. Open op een laptop in Chrome:'),
+        el('p', { style: 'word-break:break-all;color:var(--primary)' }, new URL('cast.html', location.href).toString()),
+        el('p', {}, 'Vul daar de code in en cast één keer. Daarna mag de laptop dicht — je telefoon stuurt de tv rechtstreeks aan.'),
+        el('p', { class: 'mb0' }, el('b', {}, 'Iets anders?'), ' Elke oude tablet, laptop of Raspberry Pi met een browser werkt ook. Open dezelfde tv-pagina en voer de code in.'))),
+      el('p', { class: 'tiny dim mb0' }, 'Casten vanaf je iPhone zelf kan niet — Apple staat browsers geen toegang tot Chromecast-apparaten toe. Daarom die omweg via een laptop of een browser op de tv.'));
+  };
+  teken();
+  return card;
 }

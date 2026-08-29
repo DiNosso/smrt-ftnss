@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SMRT.FTNSS · naar de Chromecast sturen</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  body { max-width: 640px; margin: 0 auto; padding: 24px 18px 60px; }
+  .step { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .step .n { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--secondary); color: #eafffb;
+             display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .8rem; }
+  #status { margin-top: 14px; }
+</style>
+</head>
+<body>
+  <h1 style="font-family:var(--font-display)">Naar je Chromecast</h1>
+  <p class="dim">Deze pagina zet het tv-scherm van SMRT.FTNSS op je Chromecast. Open hem in <b>Chrome op je laptop of desktop</b> — casten vanuit een browser werkt niet op een iPhone, dat is een beperking van iOS.</p>
+
+  <div class="card">
+    <div class="step"><span class="n">1</span><div>Vul je koppelcode in (staat in de app onder Instellingen → TV-scherm).</div></div>
+    <div class="step"><span class="n">2</span><div>Klik op <b>Casten</b> en kies je Chromecast.</div></div>
+    <div class="step"><span class="n">3</span><div>Klaar — je mag deze laptop daarna dichtklappen. De telefoon stuurt de tv rechtstreeks aan.</div></div>
+  </div>
+
+  <label for="code">Koppelcode</label>
+  <input id="code" placeholder="ABCD2345" maxlength="8" style="text-transform:uppercase;letter-spacing:.18em;font-size:1.2rem;text-align:center">
+  <button id="go" class="btn-primary btn-block mt">📺 Casten</button>
+  <p id="status" class="tiny dim"></p>
+
+  <details class="mt">
+    <summary class="tiny">Werkt het niet?</summary>
+    <div class="tiny dim">
+      <p>De castknop verschijnt alleen in Chrome op een computer (niet op iOS). Staat je Chromecast er niet tussen, controleer dan of de laptop op hetzelfde wifi-netwerk zit.</p>
+      <p>Heb je een <b>Chromecast met Google TV</b> of een <b>Google TV Streamer</b>? Dan kun je casten helemaal overslaan: installeer daar een browser (bijvoorbeeld TV Bro of Fully Kiosk) en open de tv-pagina rechtstreeks. Dat is stabieler, want dan verloopt de castsessie nooit.</p>
+    </div>
+  </details>
+
+<script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
+<script>
+// DashCast: een openbaar geregistreerde Cast-ontvanger die één taak heeft —
+// een URL op de tv tonen. Daardoor hoeven we zelf niets bij Google te
+// registreren en kost dit niets.
+const DASHCAST = '84912283';
+const NS = 'urn:x-cast:com.madmod.dashcast';
+const statusEl = document.getElementById('status');
+const zeg = (t, fout) => { statusEl.textContent = t; statusEl.style.color = fout ? 'var(--danger)' : ''; };
+
+window.__onGCastApiAvailable = (beschikbaar) => {
+  if (!beschikbaar) return zeg('Casten wordt door deze browser niet ondersteund. Gebruik Chrome op een computer.', true);
+  cast.framework.CastContext.getInstance().setOptions({
+    receiverApplicationId: DASHCAST,
+    autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED,
+  });
+  zeg('Klaar om te casten.');
+};
+
+document.getElementById('go').addEventListener('click', async () => {
+  const code = document.getElementById('code').value.trim().toUpperCase();
+  if (!/^[A-Z0-9]{8}$/.test(code)) return zeg('Vul de koppelcode van 8 tekens in.', true);
+  localStorage.setItem('smrtftnss.castcode', code);
+  const url = new URL('tv.html', location.href);
+  url.searchParams.set('code', code);
+  try {
+    const ctx = cast.framework.CastContext.getInstance();
+    zeg('Kies je Chromecast…');
+    await ctx.requestSession();
+    const sess = ctx.getCurrentSession();
+    if (!sess) return zeg('Geen sessie gestart.', true);
+    await sess.sendMessage(NS, { url: url.toString(), force: true, reload: false, reload_time: 0 });
+    zeg('Verstuurd. Het tv-scherm zou nu moeten verschijnen — je kunt dit venster sluiten.');
+  } catch (e) {
+    zeg('Casten mislukt: ' + (e?.description || e?.message || e), true);
+  }
+});
+
+const bewaard = localStorage.getItem('smrtftnss.castcode');
+if (bewaard) document.getElementById('code').value = bewaard;
+</script>
+</body>
+</html>

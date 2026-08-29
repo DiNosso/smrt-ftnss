@@ -1,7 +1,7 @@
 // Eenvoudige localStorage-state. Alles lokaal, niets verlaat je toestel
 // behalve directe calls naar intervals.icu en YouTube.
 
-export const VERSION = '2.8.0';
+export const VERSION = '2.9.0';
 
 const KEY = 'fait.v1';
 
@@ -27,6 +27,8 @@ const DEFAULTS = {
     // Op deze dagen plant de app geen krachtsessie.
     fixedSports: [],
     lastSyncAt: null,          // ISO-tijd van de laatste intervals.icu-sync
+    tvPairCode: null,          // koppelcode voor het tv-scherm
+    tvEnabled: false,          // tv-scherm meesturen tijdens een workout
     lastBackupAt: null,        // ISO-datum laatste backup-export
   },
   weights: {},                 // {'YYYY-MM-DD': kg} handmatige wegingen
