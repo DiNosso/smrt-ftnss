@@ -1,7 +1,9 @@
 // Eenvoudige localStorage-state. Alles lokaal, niets verlaat je toestel
 // behalve directe calls naar intervals.icu en YouTube.
 
-export const VERSION = '2.9.1';
+import { mirror } from './backup.js';
+
+export const VERSION = '2.9.2';
 
 const KEY = 'fait.v1';
 
@@ -71,8 +73,21 @@ function deepMerge(base, over) {
   return base;
 }
 
+export const STORAGE_KEY = KEY;
+
+let mirrorTimer = null;
 export function save() {
-  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { console.warn('save failed', e); }
+  const json = JSON.stringify(state);
+  try {
+    localStorage.setItem(KEY, json);
+  } catch (e) {
+    // Vol of geblokkeerd: dan is de kopie in IndexedDB je enige redding.
+    console.warn('save failed', e);
+    state.settings.storageFull = true;
+  }
+  // Stille kopie, samengevoegd zodat we niet bij elke toetsaanslag schrijven.
+  clearTimeout(mirrorTimer);
+  mirrorTimer = setTimeout(() => { mirror(json); }, 1500);
 }
 
 export function get() { return state; }

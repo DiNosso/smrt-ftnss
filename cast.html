@@ -75,8 +75,11 @@ document.getElementById('go').addEventListener('click', async () => {
   }
 });
 
-const bewaard = localStorage.getItem('smrtftnss.castcode');
-if (bewaard) document.getElementById('code').value = bewaard;
+// Code uit de link of uit een eerdere keer, zodat je deze pagina kunt
+// bookmarken en het bij twee klikken blijft.
+const uitLink = new URLSearchParams(location.search).get('code');
+const bewaard = uitLink || localStorage.getItem('smrtftnss.castcode');
+if (bewaard) document.getElementById('code').value = bewaard.toUpperCase();
 </script>
 </body>
 </html>

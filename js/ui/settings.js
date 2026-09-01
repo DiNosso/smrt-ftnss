@@ -5,6 +5,9 @@ import { get, S, update, exportData, importData, todayISO, VERSION } from '../st
 import { EQUIPMENT_NL } from '../data/exercises.js';
 import * as icu from '../icu.js';
 import { openEditor } from './editor.js';
+import { doeBackup } from './today.js';
+import { storageInfo } from '../backup.js';
+import { STORAGE_KEY } from '../state.js';
 import { SPORT_CHOICES } from '../engine.js';
 import { newPairCode } from '../tvsync.js';
 import { parseStrongCsv, applyBaselines, scaleBaselines } from '../engine.js';
@@ -124,12 +127,11 @@ export function renderSettings(app, ctx) {
   app.append(el('div', { class: 'card' },
     el('h4', {}, 'Data'),
     el('p', { class: 'tiny dim' }, backupHint()),
+    (() => { const o = storageInfo(STORAGE_KEY);
+      return el('p', { class: 'tiny dim' }, `Opslag in gebruik: ${(o.bytes / 1024).toFixed(0)} kB (${o.pct}% van wat een website mag bewaren). Er staat automatisch een reservekopie op je toestel.`); })(),
     el('div', { class: 'row wrap' },
       el('button', { class: 'btn-sm', onclick: () => {
-        const blob = new Blob([exportData()], { type: 'application/json' });
-        const a = el('a', { href: URL.createObjectURL(blob), download: `smrt-ftnss-backup-${todayISO()}.json` });
-        a.click();
-        update(s => { s.settings.lastBackupAt = todayISO(); });
+        doeBackup(ctx);
       } }, '⬇ Backup exporteren'),
       el('button', { class: 'btn-sm', onclick: () => {
         const inp = el('input', { type: 'file', accept: '.json' });
@@ -357,7 +359,11 @@ function tvCard(ctx) {
         el('button', { class: 'btn-sm grow', onclick: () => {
           const u = tvUrl + '?code=' + code;
           navigator.clipboard?.writeText(u).then(() => toast('Tv-link gekopieerd')).catch(() => toast(u));
-        } }, 'Kopieer tv-link')),
+        } }, 'Kopieer tv-link'),
+        el('button', { class: 'btn-sm grow', onclick: () => {
+          const u = new URL('cast.html', location.href).toString() + '?code=' + code;
+          navigator.clipboard?.writeText(u).then(() => toast('Laptop-link gekopieerd — bookmark hem daar')).catch(() => toast(u));
+        } }, 'Kopieer laptop-link')),
       explain('Hoe krijg ik dit op mijn tv?', el('div', {},
         el('p', {}, el('b', {}, '1. Chromecast met Google TV of Google TV Streamer'), ' — de beste manier. Installeer daar een browser (TV Bro of Fully Kiosk) en open de tv-link. Eén keer de code invoeren en klaar; geen castsessie die kan verlopen.'),
         el('p', {}, el('b', {}, '2. Vanaf je iPhone met URLCast'), ' — een gratis app die precies dit doet: een webpagina naar je Chromecast sturen, waarna je de app mag afsluiten. Let op: URLCast staat sinds 2025 niet meer in de Nederlandse App Store (de maker heeft de EU-handelaarsregistratie nooit gedaan). Met een gratis Amerikaans of Brits Apple-account is hij wel te installeren.'),

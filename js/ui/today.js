@@ -1,7 +1,8 @@
 // Vandaag: hero + readiness-ring, weekstrip, advies, sessie, spierkaart, gewoontes
 
 import { el, fmtDate, toast, sheet, DAY_NL, ring, statRow, cardHead, explain, weekStrip, bodyMap, ICO } from './common.js';
-import { get, S, update, todayISO, addDays } from '../state.js';
+import { get, S, update, todayISO, addDays, exportData, STORAGE_KEY } from '../state.js';
+import { daysSince, storageInfo, backupName } from '../backup.js';
 import * as icu from '../icu.js';
 import {
   advise, buildWorkout, mesoInfo, muscleStatus, weekStreak, adhocSession,
@@ -208,6 +209,27 @@ export async function renderToday(app, ctx) {
       get().swaps[iso] ? el('button', { class: 'btn-sm btn-ghost', style: 'color:var(--accent)', onclick: () => { update(st => { delete st.swaps[iso]; }); ctx.render(); } }, '↺ Automatisch') : null),
     explain('Hoe werkt dit?', el('p', { class: 'mb0' },
       'Sla je een zware sessie over, dan verdwijnt die niet: de wachtrij schuift op naar de eerstvolgende dag waarop je genoeg tijd hebt én je spieren hersteld zijn. Een vrije workout telt gewoon mee in je volume en herstel.'))));
+
+  // ---------- Backup ----------
+  // Alles staat lokaal. Zonder geëxporteerd bestand ben je alles kwijt bij een
+  // nieuwe telefoon of als je websitegegevens wist.
+  const dagen = daysSince(S().lastBackupAt);
+  const opslag = storageInfo(STORAGE_KEY);
+  const heeftLogs = get().logs.length > 0;
+  if (heeftLogs && (dagen === null || dagen > 21 || opslag.krap)) {
+    app.append(el('div', { class: 'card', style: 'border-color:var(--warn)' },
+      cardHead(ICO.scale, opslag.krap ? 'Je opslag raakt vol' : 'Maak een backup'),
+      el('p', { class: 'tiny dim' }, opslag.krap
+        ? `De app gebruikt ${(opslag.bytes / 1024).toFixed(0)} kB van de ~5 MB die een website mag opslaan. Exporteer een backup en overweeg oude logs op te ruimen.`
+        : dagen === null
+          ? `Je hebt ${get().logs.length} workouts gelogd en nog nooit een backup gemaakt. Alles staat alleen op dit toestel.`
+          : `Laatste backup was ${dagen} dagen geleden. Sindsdien is er weer getraind.`),
+      el('button', { class: 'btn-primary btn-block', onclick: () => doeBackup(ctx) }, '⬇ Backup maken'),
+      explain('Waarom is dit nodig?', el('p', { class: 'mb0' },
+        'De app bewaart een stille reservekopie op je toestel, en zet die automatisch terug als de opslag wordt opgeruimd. '
+        + 'Maar dat helpt niet bij een nieuwe telefoon, of als je in Safari je websitegegevens wist — dan gaat ook die kopie mee. '
+        + 'Alleen een geëxporteerd bestand overleeft dat.'))));
+  }
 
   // ---------- Onafgemaakte training ----------
   const bezig = get().activeWorkout;
@@ -539,4 +561,18 @@ function openActivity(a) {
         el('span', { class: 'tiny dim' }, k),
         el('span', { style: 'font-size:.9rem' }, v)))),
     a.description ? el('p', { class: 'tiny mt' }, a.description) : null));
+}
+
+/** Backup exporteren naar een bestand. */
+export function doeBackup(ctx) {
+  try {
+    const blob = new Blob([exportData()], { type: 'application/json' });
+    const a = el('a', { href: URL.createObjectURL(blob), download: backupName() });
+    document.body.append(a); a.click(); a.remove();
+    update(s => { s.settings.lastBackupAt = todayISO(); });
+    toast('Backup opgeslagen — bewaar hem ergens buiten je telefoon');
+    ctx?.render?.();
+  } catch (e) {
+    toast('Backup mislukt: ' + (e?.message || e));
+  }
 }

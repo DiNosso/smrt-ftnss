@@ -1,6 +1,6 @@
 // SMRT.FTNSS — router en tabbar
 
-import { el } from './ui/common.js';
+import { el, toast } from './ui/common.js';
 import { get, S, update, todayISO } from './state.js';
 import { renderToday } from './ui/today.js';
 import { renderWeek } from './ui/week.js';
@@ -67,3 +67,10 @@ addEventListener('hashchange', () => {
 });
 
 render();
+
+// Is de opslag opgeruimd en teruggezet? Dat moet je weten, want dan is er
+// mogelijk iets van de laatste sessie verloren.
+if (window.__HERSTELD) {
+  const { at } = window.__HERSTELD;
+  setTimeout(() => toast(`Opslag was gewist — je gegevens zijn teruggezet vanaf de reservekopie van ${new Date(at).toLocaleString('nl-NL', { dateStyle: 'short', timeStyle: 'short' })}`), 800);
+}
