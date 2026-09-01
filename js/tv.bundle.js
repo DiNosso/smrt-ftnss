@@ -3,7 +3,7 @@
        Typ de koppelcode die daar staat over met je afstandsbediening of toetsenbord.</p>`,s.append(o),l){let t=document.createElement("p");t.style.color="var(--danger)",t.textContent=l,s.append(t)}Io.append(s);let c="",r=()=>a.forEach((t,n)=>{t.textContent=c[n]||"",t.classList.toggle("on",n===c.length)});r(),addEventListener("keydown",function t(n){let e=(n.key||"").toUpperCase();if(e==="BACKSPACE"){c=c.slice(0,-1),r();return}/^[A-Z0-9]$/.test(e)&&(c+=e,r(),c.length===8&&(removeEventListener("keydown",t),localStorage.setItem(Zr,c),Al(c)))})}function Vc(){Io.innerHTML=`
     <div class="screen">
       <div class="top">
-        <span class="brand">SMRT.FTNSS</span>
+        <span class="brand"><img src="assets/icons/mark.svg" alt="">SMRT.FTNSS</span>
         <span class="sess" id="sess"></span>
         <span class="clock" id="clock"></span>
       </div>

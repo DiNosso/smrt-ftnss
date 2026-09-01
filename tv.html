@@ -10,7 +10,8 @@
   html, body { height: 100%; margin: 0; overflow: hidden; background: var(--background); }
   .screen { height: 100vh; display: flex; flex-direction: column; padding: 3vmin 4vmin; gap: 2vmin; }
   .top { display: flex; align-items: baseline; gap: 2vmin; }
-  .top .brand { font-family: var(--font-display); font-size: clamp(1rem, 2.6vmin, 2rem); color: var(--primary); letter-spacing: .04em; }
+  .top .brand { font-family: var(--font-display); font-size: clamp(1rem, 2.6vmin, 2rem); color: var(--primary); letter-spacing: .04em; display: flex; align-items: center; gap: .5em; }
+  .top .brand img { height: 1em; width: 1em; }
   .top .sess { font-size: clamp(.8rem, 2vmin, 1.4rem); color: var(--text-dim); }
   .top .clock { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--text-dim); font-size: clamp(.9rem, 2.2vmin, 1.6rem); }
   .main { flex: 1; display: flex; gap: 3vmin; min-height: 0; align-items: stretch; }

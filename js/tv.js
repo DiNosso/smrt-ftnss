@@ -104,7 +104,7 @@ function bouwScherm() {
   root.innerHTML = `
     <div class="screen">
       <div class="top">
-        <span class="brand">SMRT.FTNSS</span>
+        <span class="brand"><img src="assets/icons/mark.svg" alt="">SMRT.FTNSS</span>
         <span class="sess" id="sess"></span>
         <span class="clock" id="clock"></span>
       </div>

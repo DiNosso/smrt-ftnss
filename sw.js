@@ -1,5 +1,5 @@
 // Service worker: offline-first voor app-bestanden, netwerk voor API's
-const CACHE = 'fait-v26';
+const CACHE = 'fait-v27';
 const ASSETS = [
   './', 'index.html', 'css/style.css', 'manifest.webmanifest',
   'js/app.js', 'js/state.js', 'js/icu.js', 'js/engine.js',
@@ -15,6 +15,7 @@ const ASSETS = [
   'assets/clips/shoulders_lateral_raise.mp4',
   'assets/fonts/bbh-hegarty-400.woff2',
   'assets/icons/icon-180.png', 'assets/icons/icon-192.png', 'assets/icons/icon-512.png',
+  'assets/icons/mark.svg', 'assets/icons/favicon-32.png',
 ];
 
 self.addEventListener('install', e => {

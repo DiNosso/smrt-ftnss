@@ -583,3 +583,8 @@ body.resting #app { padding-bottom: calc(var(--tabbar-h) + 96px); }
 .wu .wutime.running { color: var(--accent); font-weight: 700; }
 .wu .demo { max-height: 150px; margin-top: 6px; }
 .wu .demo.clip { max-height: 150px; }
+
+/* Merkteken naast de wordmark. De wordmark krimpt mee zodat hij naast de
+   readiness-ring past — beide zijn vast, de tekst is het enige dat kan geven. */
+.brandline { display: flex; align-items: center; gap: 8px; font-size: clamp(1.35rem, 7.2vw, 2.1rem); white-space: nowrap; }
+.brandmark { width: .8em; height: .8em; flex: none; }
