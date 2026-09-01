@@ -112,12 +112,25 @@ export function clipBlock(exercise, { tag = 'Demo' } = {}) {
   }, { once: true });
   // Autoplay kan geweigerd worden; probeer het expliciet nog een keer.
   v.addEventListener('canplay', () => { v.play?.().catch(() => {}); }, { once: true });
-  // Geef het kader de verhouding van de clip zelf. De clips zijn staand (9:16);
-  // zonder dit staan ze in een liggend kader met zwarte balken ernaast.
-  v.addEventListener('loadedmetadata', () => {
-    if (v.videoWidth && v.videoHeight) box.style.aspectRatio = `${v.videoWidth} / ${v.videoHeight}`;
-  }, { once: true });
+  // Geef het kader exact de verhouding van de clip. Clips verschillen: Vital is
+  // vierkant, YMove staand. Een block-element met aspect-ratio vult altijd de
+  // volle breedte en knijpt dan de hoogte af — daarom breedte én hoogte zelf
+  // berekenen, passend binnen de container en maximaal 46% van het scherm.
+  v.addEventListener('loadedmetadata', () => fitClipBox(box, v.videoWidth, v.videoHeight), { once: true });
   return box;
+}
+
+/** Kader op maat van het beeld: past in de breedte, niet hoger dan 46vh, exact de verhouding. */
+export function fitClipBox(box, w, h) {
+  if (!w || !h) return;
+  const r = w / h;
+  const maxW = box.parentElement?.clientWidth || window.innerWidth;
+  const maxH = window.innerHeight * 0.46;
+  let bw = maxW, bh = bw / r;
+  if (bh > maxH) { bh = maxH; bw = bh * r; }
+  box.style.aspectRatio = `${w} / ${h}`;
+  box.style.width = Math.round(bw) + 'px';
+  box.style.height = Math.round(bh) + 'px';
 }
 
 /** Beste beschikbare visual: echte clip > 2-frame demo > niets. */
