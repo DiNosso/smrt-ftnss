@@ -1,5 +1,5 @@
 // Service worker: offline-first voor app-bestanden, netwerk voor API's
-const CACHE = 'fait-v28';
+const CACHE = 'fait-v29';
 const ASSETS = [
   './', 'index.html', 'css/style.css', 'manifest.webmanifest',
   'js/app.js', 'js/state.js', 'js/icu.js', 'js/engine.js',
@@ -7,15 +7,31 @@ const ASSETS = [
   'js/ui/common.js', 'js/ui/today.js', 'js/ui/workout.js', 'js/ui/week.js',
   'js/ui/library.js', 'js/ui/progress.js', 'js/ui/settings.js', 'js/ui/editor.js', 'js/ui/cast.js',
   'js/tvsync.js', 'js/vendor/mqtt.min.js', 'js/tv.bundle.js', 'tv.html', 'cast.html',
-  'assets/clips/biceps_hammer_curl.mp4', 'assets/clips/chest_svend_press.mp4',
-  'assets/clips/full_kettlebell_swing.mp4', 'assets/clips/glutes_step_up.mp4',
-  'assets/clips/hams_stiff_leg_deadlift.mp4', 'assets/clips/quads_bulgarian_split_squat.mp4',
-  'assets/clips/quads_goblet_squat.mp4', 'assets/clips/shoulders_arnold_press.mp4',
-  'assets/clips/shoulders_dumbbell_press.mp4', 'assets/clips/shoulders_front_raise.mp4',
-  'assets/clips/shoulders_lateral_raise.mp4',
+  'assets/clips/back_band_pull_apart.mp4', 'assets/clips/back_band_row.mp4',
+  'assets/clips/back_dumbbell_row.mp4', 'assets/clips/biceps_band_curl.mp4',
+  'assets/clips/biceps_concentration_curl.mp4', 'assets/clips/biceps_dumbbell_curl.mp4',
+  'assets/clips/biceps_hammer_curl.mp4', 'assets/clips/biceps_incline_curl.mp4',
+  'assets/clips/biceps_spider_curl.mp4', 'assets/clips/calves_jump_rope.mp4',
+  'assets/clips/chest_banded_push_up.mp4', 'assets/clips/chest_dumbbell_bench_press.mp4',
+  'assets/clips/chest_incline_dumbbell_press.mp4', 'assets/clips/chest_push_up.mp4',
+  'assets/clips/chest_svend_press.mp4', 'assets/clips/core_ab_wheel.mp4',
+  'assets/clips/core_crunch.mp4', 'assets/clips/core_dead_bug.mp4',
+  'assets/clips/core_lying_leg_raise.mp4', 'assets/clips/core_plank.mp4',
+  'assets/clips/core_russian_twist.mp4', 'assets/clips/core_side_plank.mp4',
+  'assets/clips/full_burpee.mp4', 'assets/clips/full_kettlebell_swing.mp4',
+  'assets/clips/glutes_glute_bridge.mp4', 'assets/clips/glutes_single_leg_hip_thrust.mp4',
+  'assets/clips/glutes_step_up.mp4', 'assets/clips/glutes_sumo_squat.mp4',
+  'assets/clips/hams_stiff_leg_deadlift.mp4', 'assets/clips/mobility_cat_cow.mp4',
+  'assets/clips/mobility_couch_stretch.mp4', 'assets/clips/mobility_leg_swing.mp4',
+  'assets/clips/mobility_thoracic_bridge.mp4', 'assets/clips/quads_bulgarian_split_squat.mp4',
+  'assets/clips/quads_goblet_squat.mp4', 'assets/clips/quads_lunge.mp4',
+  'assets/clips/shoulders_arnold_press.mp4', 'assets/clips/shoulders_dumbbell_press.mp4',
+  'assets/clips/shoulders_front_raise.mp4', 'assets/clips/shoulders_lateral_raise.mp4',
+  'assets/clips/triceps_diamond_push_up.mp4', 'assets/clips/triceps_kickback.mp4',
+  'assets/clips/triceps_overhead_extension.mp4',
   'assets/fonts/bbh-hegarty-400.woff2',
   'assets/icons/icon-180.png', 'assets/icons/icon-192.png', 'assets/icons/icon-512.png',
-  'assets/icons/mark.svg', 'assets/icons/favicon-32.png',
+  'assets/icons/mark.svg', 'assets/icons/mark-light.svg', 'assets/icons/favicon-32.png',
 ];
 
 self.addEventListener('install', e => {

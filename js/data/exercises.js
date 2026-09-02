@@ -39,7 +39,8 @@ export const EXERCISES = [
   "instructions": "Lig op een vlakke bank met dumbbells. Druk omhoog, laat gecontroleerd zakken.",
   "recoveryHours": 48,
   "demo": true,
-  "videoSrc": "bb"
+  "videoSrc": "bb",
+  "clip": true
  },
  {
   "id": "chest_incline_barbell_press",
@@ -77,7 +78,8 @@ export const EXERCISES = [
   "instructions": "Stel bank in op 30-45 graden. Druk dumbbells omhoog met lichte boog.",
   "recoveryHours": 48,
   "demo": true,
-  "videoSrc": "bb"
+  "videoSrc": "bb",
+  "clip": true
  },
  {
   "id": "chest_dumbbell_fly",
@@ -147,7 +149,8 @@ export const EXERCISES = [
   "video": "wxhNoKZlfY8",
   "instructions": "Plankpositie, handen op schouderbreedte. Zak tot borst bijna grond raakt, druk omhoog.",
   "recoveryHours": 24,
-  "demo": true
+  "demo": true,
+  "clip": true
  },
  {
   "id": "chest_dip",
@@ -256,7 +259,8 @@ export const EXERCISES = [
   "instructions": "Eén hand en knie op bank. Trek dumbbell naar heup, kneep schouderblad.",
   "recoveryHours": 36,
   "demo": true,
-  "videoSrc": "bb"
+  "videoSrc": "bb",
+  "clip": true
  },
  {
   "id": "back_lat_pulldown",
@@ -648,7 +652,8 @@ export const EXERCISES = [
   "video": "sAq_ocpRh_I",
   "instructions": "Sta of zit, curl dumbbells omhoog. Draai handpalmen naar boven.",
   "recoveryHours": 36,
-  "demo": true
+  "demo": true,
+  "clip": true
  },
  {
   "id": "biceps_hammer_curl",
@@ -716,7 +721,8 @@ export const EXERCISES = [
   "instructions": "Zit op bank, elleboog tegen binnenkant dij. Curl dumbbell omhoog.",
   "recoveryHours": 36,
   "demo": true,
-  "videoSrc": "bb"
+  "videoSrc": "bb",
+  "clip": true
  },
  {
   "id": "biceps_incline_curl",
@@ -732,7 +738,8 @@ export const EXERCISES = [
   "video": "soxrZlIl35U",
   "instructions": "Lig op schuine bank (45 graden). Laat armen hangen, curl dumbbells omhoog.",
   "recoveryHours": 36,
-  "demo": true
+  "demo": true,
+  "clip": true
  },
  {
   "id": "biceps_spider_curl",
@@ -751,7 +758,8 @@ export const EXERCISES = [
   "altEquipment": [
    "ezBar"
   ],
-  "demo": true
+  "demo": true,
+  "clip": true
  },
  {
   "id": "triceps_cable_pushdown",
@@ -784,7 +792,8 @@ export const EXERCISES = [
    "cableMachine"
   ],
   "demo": true,
-  "videoSrc": "bb"
+  "videoSrc": "bb",
+  "clip": true
  },
  {
   "id": "triceps_skull_crusher",
@@ -853,7 +862,8 @@ export const EXERCISES = [
   "video": "6SS6K3lAwZ8",
   "instructions": "Buig voorover, elleboog langs lichaam. Strek arm naar achteren.",
   "recoveryHours": 24,
-  "demo": true
+  "demo": true,
+  "clip": true
  },
  {
   "id": "triceps_diamond_push_up",
@@ -871,7 +881,8 @@ export const EXERCISES = [
   "video": "J0DnG1_S92I",
   "instructions": "Push-up positie, handen samen in diamantvorm. Zak langzaam, druk omhoog.",
   "recoveryHours": 24,
-  "demo": true
+  "demo": true,
+  "clip": true
  },
  {
   "id": "triceps_cable_overhead_extension",
@@ -1018,7 +1029,8 @@ export const EXERCISES = [
   "altEquipment": [
    "dumbbells"
   ],
-  "demo": true
+  "demo": true,
+  "clip": true
  },
  {
   "id": "quads_hack_squat",
@@ -1238,7 +1250,8 @@ export const EXERCISES = [
   "altEquipment": [
    "kettlebell"
   ],
-  "demo": true
+  "demo": true,
+  "clip": true
  },
  {
   "id": "glutes_glute_bridge",
@@ -1255,7 +1268,8 @@ export const EXERCISES = [
   "video": "8bbE64NuDTU",
   "instructions": "Lig op rug, knieen gebogen. Druk heupen omhoog, kneep bilspieren.",
   "recoveryHours": 24,
-  "demo": true
+  "demo": true,
+  "clip": true
  },
  {
   "id": "glutes_step_up",
@@ -1299,7 +1313,8 @@ export const EXERCISES = [
   "altEquipment": [
    "bodyweight"
   ],
-  "demo": true
+  "demo": true,
+  "clip": true
  },
  {
   "id": "glutes_donkey_kickback",
@@ -1351,7 +1366,8 @@ export const EXERCISES = [
   "video": "pSHjTRCQxIw",
   "instructions": "Op onderarmen en tenen. Houd lichaam recht, span core aan.",
   "recoveryHours": 24,
-  "demo": true
+  "demo": true,
+  "clip": true
  },
  {
   "id": "core_cable_crunch",
@@ -1397,7 +1413,8 @@ export const EXERCISES = [
   "video": null,
   "instructions": "Zit met gebogen knieen, leun achterover. Draai torso links en rechts.",
   "recoveryHours": 24,
-  "demo": true
+  "demo": true,
+  "clip": true
  },
  {
   "id": "core_ab_wheel",
@@ -1414,7 +1431,8 @@ export const EXERCISES = [
   "video": "j6lR4u193gE",
   "instructions": "Op knieen, rol wheel naar voren tot bijna gestrekt. Trek terug met buikspieren.",
   "recoveryHours": 36,
-  "demo": true
+  "demo": true,
+  "clip": true
  },
  {
   "id": "core_mountain_climber",
@@ -1434,22 +1452,7 @@ export const EXERCISES = [
   "recoveryHours": 24,
   "demo": true
  },
- {
-  "id": "core_dead_bug",
-  "name": "Dead Bug",
-  "nameNL": "Dead Bug",
-  "muscle": "core",
-  "secondary": [],
-  "equipment": [
-   "bodyweight"
-  ],
-  "difficulty": 1,
-  "video": null,
-  "instructions": "Lig op rug, armen omhoog, knieen 90 graden. Strek tegenovergestelde arm en been uit.",
-  "recoveryHours": 24,
-  "demo": true
- },
- {
+  {
   "id": "core_pallof_press",
   "name": "Pallof Press",
   "nameNL": "Pallof Press",
@@ -1498,7 +1501,8 @@ export const EXERCISES = [
   "video": "XeN4pEZZJNI",
   "instructions": "Lig op zij, steun op onderarm. Hef heupen op, houd lichaam in rechte lijn.",
   "recoveryHours": 24,
-  "demo": true
+  "demo": true,
+  "clip": true
  },
  {
   "id": "core_cable_woodchop",
@@ -1570,7 +1574,8 @@ export const EXERCISES = [
   "difficulty": 3,
   "video": "wS4OsJ4yzx4",
   "instructions": "Squat, handen op grond, spring naar plank, push-up, spring terug, spring omhoog.",
-  "recoveryHours": 24
+  "recoveryHours": 24,
+  "clip": true
  },
  {
   "id": "full_thruster",
@@ -1747,7 +1752,8 @@ export const EXERCISES = [
   "difficulty": 2,
   "video": "s-8tbwbEZ68",
   "instructions": "Spring licht op de ballen van je voeten. Draai het touw met je polsen, niet je armen.",
-  "recoveryHours": 24
+  "recoveryHours": 24,
+  "clip": true
  },
  {
   "id": "forearms_wrist_curl",
@@ -1840,7 +1846,8 @@ export const EXERCISES = [
   "video": "rX-rWx0Ujzo",
   "instructions": "Leg de band over je bovenrug en klem de uiteinden onder je handen. Doe push-ups; bovenin levert de band juist maximale weerstand, zodat de spanning op je borst nooit wegvalt.",
   "recoveryHours": 36,
-  "tips": "Uit je rapport: de band compenseert precies het dode punt bovenin de push-up."
+  "tips": "Uit je rapport: de band compenseert precies het dode punt bovenin de push-up.",
+  "clip": true
  },
  {
   "id": "triceps_band_pushdown",
@@ -1873,7 +1880,8 @@ export const EXERCISES = [
   "difficulty": 1,
   "video": "TBNt2DBvkl4",
   "instructions": "Zit met gestrekte benen, band om je voeten. Trek de uiteinden naar je middenrif, knijp je schouderbladen samen en laat langzaam terugkomen.",
-  "recoveryHours": 36
+  "recoveryHours": 36,
+  "clip": true
  },
  {
   "id": "back_band_pull_apart",
@@ -1890,7 +1898,8 @@ export const EXERCISES = [
   "video": "2fmxGGtdbog",
   "instructions": "Houd de band gestrekt voor je op schouderhoogte. Trek de band uit elkaar tot hij je borst raakt, knijp je schouderbladen samen. Perfect voor houding en gezonde schouders.",
   "recoveryHours": 24,
-  "demo": true
+  "demo": true,
+  "clip": true
  },
  {
   "id": "biceps_band_curl",
@@ -1906,7 +1915,8 @@ export const EXERCISES = [
   "difficulty": 1,
   "video": "U7p90HpfpQQ",
   "instructions": "Ga op het midden van de band staan, curl de uiteinden omhoog met gesupineerde greep (handpalmen naar boven draaien). Oplopende weerstand bovenin.",
-  "recoveryHours": 24
+  "recoveryHours": 24,
+  "clip": true
  },
  {
   "id": "core_crunch",
@@ -1921,7 +1931,8 @@ export const EXERCISES = [
   "video": "Xyd_fa5zoEU",
   "instructions": "Lig op je rug, knieën gebogen. Rol je schouderbladen van de vloer richting je bekken, adem uit bovenin, laat langzaam zakken. Focus op je rechte buikspier, trek niet aan je nek.",
   "recoveryHours": 24,
-  "demo": true
+  "demo": true,
+  "clip": true
  },
  {
   "id": "core_lying_leg_raise",
@@ -1936,7 +1947,8 @@ export const EXERCISES = [
   "video": "JB2oyawG9KI",
   "instructions": "Lig op je rug, handen onder je billen. Hef gestrekte benen tot 90 graden en laat langzaam zakken zonder dat je onderrug loskomt van de mat.",
   "recoveryHours": 24,
-  "demo": true
+  "demo": true,
+  "clip": true
  },
  {
   "id": "core_dead_bug",
@@ -1951,7 +1963,47 @@ export const EXERCISES = [
   "video": "g_BYB0R-4Ws",
   "instructions": "Lig op je rug, armen omhoog, knieën 90 graden. Strek langzaam tegengestelde arm en been terwijl je onderrug op de mat blijft. Wissel af.",
   "recoveryHours": 12,
-  "demo": true
+  "demo": true,
+  "clip": true
+ },
+ {
+  "id": "mobility_leg_swing",
+  "name": "Leg Swing",
+  "nameNL": "Beenzwaaien",
+  "muscle": "mobility",
+  "secondary": [],
+  "equipment": ["bodyweight"],
+  "difficulty": 1,
+  "video": null,
+  "instructions": "Sta op één been, hand aan de muur of op je heup. Zwaai het andere been ontspannen zijwaarts heen en weer, elke keer iets groter. Daarna voor-achter.",
+  "recoveryHours": 0,
+  "clip": true
+ },
+ {
+  "id": "mobility_cat_cow",
+  "name": "Cat-Cow",
+  "nameNL": "Kat-koe",
+  "muscle": "mobility",
+  "secondary": [],
+  "equipment": ["bodyweight"],
+  "difficulty": 1,
+  "video": null,
+  "instructions": "Op handen en knieën. Adem uit en maak je rug bol als een kat, adem in en laat hem doorzakken. Rustig, in het tempo van je adem.",
+  "recoveryHours": 0,
+  "clip": true
+ },
+ {
+  "id": "mobility_thoracic_bridge",
+  "name": "Thoracic Bridge",
+  "nameNL": "Borstwervel-brug",
+  "muscle": "mobility",
+  "secondary": [],
+  "equipment": ["bodyweight"],
+  "difficulty": 2,
+  "video": null,
+  "instructions": "Zit met je voeten plat en handen achter je. Til je heupen op en reik met één arm over je hoofd naar de andere kant, open je borst. Wissel.",
+  "recoveryHours": 0,
+  "clip": true
  },
  {
   "id": "mobility_worlds_greatest",
@@ -1980,7 +2032,8 @@ export const EXERCISES = [
   "video": "-rsIS-wl-ig",
   "instructions": "Kniel met één knie op de mat, andere voet voor je. Span je bil aan en duw je heup naar voren. 45-60 sec per kant. Tegengif voor een dag zitten.",
   "recoveryHours": 0,
-  "demo": true
+  "demo": true,
+  "clip": true
  }
 ];
 
