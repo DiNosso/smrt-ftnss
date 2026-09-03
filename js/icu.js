@@ -61,11 +61,21 @@ export function form(cache) {
   return Math.round((w.ctl - w.atl) * 10) / 10;
 }
 
-/** Activiteiten van een bepaalde dag (lokale datum). */
-export function activitiesOn(cache, iso) {
+/** Door de app zelf gepushte krachtsessie? Die staat al als log in de app — niet dubbel tellen. */
+export function isOwn(a) {
+  return String(a?.external_id || '').startsWith('fait_') || String(a?.name || '').startsWith('SMRT.FTNSS');
+}
+
+/** Alle activiteiten uit intervals.icu, zonder de sessies die de app er zelf heeft neergezet. */
+export function externalActivities(cache) {
   const acts = cache?.activities;
   if (!Array.isArray(acts)) return [];
-  return acts.filter(a => (a.start_date_local || '').slice(0, 10) === iso);
+  return acts.filter(a => !isOwn(a));
+}
+
+/** Activiteiten van een bepaalde dag (lokale datum), zonder eigen gepushte sessies. */
+export function activitiesOn(cache, iso) {
+  return externalActivities(cache).filter(a => (a.start_date_local || '').slice(0, 10) === iso);
 }
 
 /** Ride en VirtualRide (of Run en TrailRun) zijn hetzelfde bij het matchen van plan vs. gedaan. */

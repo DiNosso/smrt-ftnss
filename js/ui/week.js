@@ -2,7 +2,7 @@
 
 import { el, DAY_NL, sheet, toast, fmtDate, explain, cardHead, ICO } from './common.js';
 import { get, update, todayISO, addDays } from '../state.js';
-import { schedule, mondayOf, mesoInfo, plannedOn, SPORT_CHOICES, fixedSportsOn } from '../engine.js';
+import { schedule, mondayOf, mesoInfo, plannedOn, SPORT_CHOICES, fixedSportsOn, plannedSession, applyVariant, variantOn, VARIANT_NL } from '../engine.js';
 import { SESSIONS } from '../data/program.js';
 import * as icu from '../icu.js';
 
@@ -47,7 +47,7 @@ export function renderWeek(app, ctx) {
         }
       } else {
         const day = simByIso[iso];
-        const session = SESSIONS[day?.sessionId] || SESSIONS.rest;
+        const session = applyVariant(SESSIONS[day?.sessionId] || SESSIONS.rest, variantOn(iso));
         title = session.name;
         sub = session.durationMin ? `± ${session.durationMin} min` : 'herstel';
         if (day?.reason) sub += ` · ${day.reason}`;
@@ -150,11 +150,45 @@ export function openDayPicker(iso, redraw) {
     update(st => { if (id) st.swaps[iso] = id; else delete st.swaps[iso]; });
     done(id ? 'Dag aangepast' : 'Terug naar automatische planning');
   };
-  box.append(el('button', { class: 'btn-block mt', style: 'border-color:rgba(224,122,122,.4)', onclick: () => set('rest') }, '🚫 Kan niet / rustdag'));
+  const planned = iso >= todayISO() ? plannedSession(iso)?.session : null;
+  if (planned && planned.type === 'heavy') {
+    box.append(el('div', { class: 'card raised' },
+      el('div', { class: 'spread' }, el('span', {}, planned.name), el('span', { class: 'pill' }, 'gepland')),
+      el('div', { class: 'row mt' },
+        el('button', { class: 'btn-sm grow', onclick: () => set('rest') }, 'Kan niet'),
+        el('button', { class: 'btn-sm grow', onclick: () => openMoveSession(iso, planned, done) }, 'Verplaatsen →'))));
+  } else {
+    box.append(el('button', { class: 'btn-block mt', style: 'border-color:rgba(224,122,122,.4)', onclick: () => set('rest') }, '🚫 Kan niet / rustdag'));
+  }
   for (const s of Object.values(SESSIONS).filter(s => s.id !== 'rest')) {
     box.append(el('button', { class: 'btn-block mt' + (swap === s.id ? ' btn-secondary' : ''), onclick: () => set(s.id) }, s.name));
   }
+  const variant = variantOn(iso);
+  if (variant) box.append(el('div', { class: 'spread', style: 'padding:6px 0' },
+    el('span', { class: 'tiny dim' }, `Variant: ${VARIANT_NL[variant]}`),
+    el('button', { class: 'btn-sm btn-ghost', style: 'color:var(--accent)', onclick: () => { update(st => { delete st.variants[iso]; }); done('Volledige sessie'); } }, '↺ Volledig')));
   if (swap) box.append(el('button', { class: 'btn-block mt btn-ghost', style: 'color:var(--accent)', onclick: () => set(null) }, '↺ Automatische planning'));
+}
+
+/** Krachtsessie naar een andere dag verplaatsen (bijv. vrijdag → zaterdag). */
+function openMoveSession(iso, session, done) {
+  const box = el('div', {},
+    el('h3', {}, `${session.name.replace(/^.*·\s*/, '')} verplaatsen`),
+    el('p', { class: 'tiny dim' }, 'Naar welke dag? De oude dag wordt een rustdag; de rest van de week schuift vanzelf mee.'));
+  const close2 = sheet(box);
+  const today = todayISO();
+  const dayName = d => DAY_NL[(new Date(d + 'T12:00:00').getDay() + 6) % 7];
+  const order = [1, 2, 3, -1, -2, -3]; // eerst vooruit, dan terug
+  for (const off of order) {
+    const d = addDays(iso, off);
+    if (d < today) continue;
+    const sports = plannedOn(d);
+    const busy = sports.length ? ` · ${sports.map(p => icu.TYPE_NL[p.type] || p.type).join(', ').toLowerCase()}` : '';
+    box.append(el('button', { class: 'btn-block mt', onclick: () => {
+      update(st => { st.swaps[iso] = 'rest'; st.swaps[d] = session.id; });
+      close2(); done(`Verplaatst naar ${dayName(d)}`);
+    } }, `${fmtDate(d).replace(/ \d{4}$/, '')}${busy}`));
+  }
 }
 
 /** Vaste sport naar een andere dag deze week verplaatsen. */

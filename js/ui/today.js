@@ -7,7 +7,7 @@ import * as icu from '../icu.js';
 import {
   advise, buildWorkout, mesoInfo, muscleStatus, weekStreak, adhocSession,
   mondayOf, minutesOn, heavyTargetForWeek, weeklyVolume, VOLUME_TARGETS, plannedOn, readinessSignals, plannedSplitOn,
-  sportDay, plannedSession, detectPlateaus,
+  sportDay, plannedSession, detectPlateaus, logTonnage, estimateMinutes, WARMUP_MIN, proposals, acceptProposal, dismissProposal, VARIANT_NL,
 } from '../engine.js';
 import { SESSIONS } from '../data/program.js';
 import { openDayPicker } from './week.js';
@@ -65,8 +65,7 @@ export async function renderToday(app, ctx) {
   });
 
   const weekSets = logs.filter(l => l.date >= mon).reduce((t, l) => t + l.sets.filter(s => s.done).length, 0);
-  const weekVol = Math.round(logs.filter(l => l.date >= mon)
-    .reduce((t, l) => t + l.sets.reduce((x, s) => x + (s.done ? (s.weight || 0) * (s.reps || 0) : 0), 0), 0));
+  const weekVol = logs.filter(l => l.date >= mon).reduce((t, l) => t + logTonnage(l), 0);
   const target = heavyTargetForWeek(iso);
 
   app.append(el('div', { class: 'card' },
@@ -122,9 +121,21 @@ export async function renderToday(app, ctx) {
         el('button', { class: 'btn-sm' + (tired === 'moe' ? ' btn-secondary' : ''), onclick: () => { update(s => { s.tired[iso] = tired === 'moe' ? undefined : 'moe'; }); ctx.render(); } }, '😮‍💨 Beetje moe'),
         el('button', { class: 'btn-sm' + (tired === 'kapot' ? ' btn-secondary' : ''), onclick: () => { update(s => { s.tired[iso] = tired === 'kapot' ? undefined : 'kapot'; }); ctx.render(); } }, '🥱 Kapot'))));
 
+    // voorstellen van de planner (jij bevestigt)
+    for (const p of proposals(iso, cache)) {
+      sessionBox.append(el('div', { class: 'card', style: 'border-color:rgba(154,224,212,.45)' },
+        cardHead(ICO.bolt, 'Voorstel van de planner'),
+        el('h4', { class: 'mt mb0' }, p.title),
+        el('p', { class: 'tiny dim mt' }, p.why),
+        el('ul', { class: 'slotlist' }, p.changes.map(c => el('li', {}, el('span', { class: 'grow' }, '→ ' + c)))),
+        el('div', { class: 'row mt' },
+          el('button', { class: 'btn-primary grow', onclick: () => { acceptProposal(p); toast('✓ Schema aangepast'); ctx.render(); } }, '✓ Ja, doe dit'),
+          el('button', { class: 'btn-sm btn-ghost', onclick: () => { dismissProposal(p); ctx.render(); } }, 'Nee, laat zo'))));
+    }
+
     // sessie van vandaag
     const done = logs.some(l => l.date === iso && l.sessionId === adv.session.id);
-    const cap = adv.session.type === 'heavy' && mins ? mins : null;
+    const cap = adv.session.timeCap || (adv.session.type === 'heavy' && mins ? mins : null);
     const slots = buildWorkout(adv.session, adv.adjust, cap);
     const focus = adv.session.focus.map(m => MUSCLE_NL[m] || m).join(' · ');
 
@@ -132,9 +143,9 @@ export async function renderToday(app, ctx) {
       el('div', { class: 'spread' },
         el('div', {},
           el('div', { class: 'tiny', style: 'color:var(--accent);font-weight:700;letter-spacing:.09em;text-transform:uppercase' },
-            adv.session.type === 'heavy' ? 'Krachtsessie' : adv.session.type === 'snack' ? 'Korte sessie' : 'Rust'),
+            (adv.session.type === 'heavy' ? 'Krachtsessie' : adv.session.type === 'snack' ? 'Korte sessie' : 'Rust') + (adv.session.variant ? ` · ${VARIANT_NL[adv.session.variant]}` : '')),
           el('h3', { class: 'mb0', style: 'margin-top:4px' }, adv.session.name.replace(/^.*·\s*/, ''))),
-        adv.session.durationMin ? el('span', { class: 'pill' }, `${cap ? Math.min(cap, adv.session.durationMin) : adv.session.durationMin} min`) : null),
+        adv.session.durationMin ? el('span', { class: 'pill' }, `${cap && !adv.session.timeCap ? Math.min(cap, adv.session.durationMin) : adv.session.durationMin} min`) : null),
       focus ? el('div', { class: 'tiny dim mt' }, focus) : null,
       slots.trimmedNote ? el('div', { class: 'tiny mt', style: 'color:var(--warn)' }, '⏱ ' + slots.trimmedNote) : null,
       slots.length ? el('ul', { class: 'slotlist mt' },
@@ -142,9 +153,12 @@ export async function renderToday(app, ctx) {
           el('span', { class: 'grow' }, s.exercise?.nameNL || s.ex),
           el('span', { class: 'scheme' }, `${s.sets}×${s.reps[0]}-${s.reps[1]}`)))) : null,
       slots.length ? el('button', {
-        class: 'btn-primary btn-block mt', onclick: () => openWorkout(adv.session, adv.adjust, ctx, cap)
+        class: 'btn-primary btn-block mt', onclick: () => adv.session.type === 'heavy'
+          ? openTimePicker(adv.session, adv.adjust, ctx, cap)
+          : openWorkout(adv.session, adv.adjust, ctx, cap)
       }, done ? '✓ Al gedaan — nog een keer?' : '▶ Start workout') : null,
       done ? el('div', { class: 'center tiny mt', style: 'color:var(--accent)' }, 'Vandaag al gelogd. Lekker bezig! 💪') : null,
+      ietsAnders(iso, ctx),
       explain('Over deze sessie',
         el('p', { class: 'mb0' }, adv.session.description),
         adv.session.id !== adv.base.id ? el('p', { class: 'mt mb0' }, `Gepland stond: ${adv.base.name} — die schuift automatisch door.`) : null)));
@@ -197,20 +211,6 @@ export async function renderToday(app, ctx) {
           toast('Maandcheck opgeslagen'); ctx.render();
         } }, '✓ Gedaan'))));
   }
-
-  // ---------- Snel iets anders ----------
-  app.append(el('div', { class: 'card' },
-    cardHead(ICO.bolt, 'Iets anders doen?',
-      el('button', { class: 'btn-sm', onclick: () => openAdhocPicker(ctx) }, '+ Vrij')),
-    el('div', { class: 'row wrap' },
-      el('button', { class: 'btn-sm', style: 'border-color:rgba(224,122,122,.4)', onclick: () => {
-        update(st => { st.swaps[iso] = 'rest'; }); ctx.render();
-      } }, '🚫 Kan niet'),
-      Object.values(SESSIONS).filter(s => s.id !== 'rest').map(s =>
-        el('button', { class: 'btn-sm', onclick: () => { update(st => { st.swaps[iso] = s.id; }); ctx.render(); } }, s.short || s.name.split('·')[1]?.trim() || s.name)),
-      get().swaps[iso] ? el('button', { class: 'btn-sm btn-ghost', style: 'color:var(--accent)', onclick: () => { update(st => { delete st.swaps[iso]; }); ctx.render(); } }, '↺ Automatisch') : null),
-    explain('Hoe werkt dit?', el('p', { class: 'mb0' },
-      'Sla je een zware sessie over, dan verdwijnt die niet: de wachtrij schuift op naar de eerstvolgende dag waarop je genoeg tijd hebt én je spieren hersteld zijn. Een vrije workout telt gewoon mee in je volume en herstel.'))));
 
   // ---------- Backup ----------
   // Alles staat lokaal. Zonder geëxporteerd bestand ben je alles kwijt bij een
@@ -270,7 +270,7 @@ export async function renderToday(app, ctx) {
   app.append(actBox);
   const drawActs = (cache) => {
     actBox.innerHTML = '';
-    const recent = (cache?.activities || []).slice(0, 5);
+    const recent = icu.externalActivities(cache).slice(0, 5);
     if (!recent.length) return;
     actBox.append(el('div', { class: 'card' },
       cardHead(ICO.heart, 'Recente activiteiten',
@@ -335,7 +335,7 @@ function openDaySheet(iso, ctx) {
   }
   for (const l of logs) {
     const doneSets = l.sets.filter(s => s.done);
-    const tonnage = Math.round(doneSets.reduce((t, s) => t + (s.weight || 0) * (s.reps || 0), 0));
+    const tonnage = logTonnage(l);
     const rirs = doneSets.map(s => s.rir).filter(r => r != null);
     box.append(el('div', { class: 'card raised' },
       el('h4', {}, SESSIONS[l.sessionId]?.name || 'Workout'),
@@ -440,6 +440,48 @@ function checkinCard(iso, ctx) {
 }
 
 /** Kies oefeningen voor een vrije workout. */
+/** Uitklapbaar in de sessiekaart: andere sessie kiezen, vrije workout of vandaag overslaan. */
+function ietsAnders(iso, ctx) {
+  const swapped = get().swaps[iso];
+  return explain('Iets anders doen?',
+    el('div', { class: 'row wrap' },
+      el('button', { class: 'btn-sm', onclick: () => openAdhocPicker(ctx) }, '+ Vrije workout'),
+      el('button', { class: 'btn-sm', style: 'border-color:rgba(224,122,122,.4)', onclick: () => {
+        update(st => { st.swaps[iso] = 'rest'; }); ctx.render();
+      } }, '🚫 Vandaag niet'),
+      Object.values(SESSIONS).filter(s => s.id !== 'rest').map(s =>
+        el('button', { class: 'btn-sm' + (swapped === s.id ? ' btn-secondary' : ''), onclick: () => { update(st => { st.swaps[iso] = s.id; }); ctx.render(); } },
+          s.short || s.name.split('·')[1]?.trim() || s.name)),
+      swapped ? el('button', { class: 'btn-sm btn-ghost', style: 'color:var(--accent)', onclick: () => { update(st => { delete st.swaps[iso]; }); ctx.render(); } }, '↺ Automatisch') : null),
+    el('p', { class: 'tiny dim mt mb0' },
+      'Sla je een zware sessie over, dan verdwijnt die niet: de wachtrij schuift op naar de eerstvolgende vrije dag waarop je spieren hersteld zijn. Een vrije workout telt gewoon mee in je volume en herstel.'));
+}
+
+/** Voor de start: hoeveel tijd heb je? De sessie wordt daarop ingekort (isolatie eruit, compounds heel). */
+function openTimePicker(session, adjust, ctx, defaultCap) {
+  const full = buildWorkout(session, adjust);
+  const fullMin = estimateMinutes(full) + WARMUP_MIN;
+  const opts = [30, 45, 60].filter(m => m < fullMin + 5);
+  const box = el('div', {}, el('h3', {}, 'Hoeveel tijd heb je?'),
+    el('p', { class: 'tiny dim' }, `Inclusief warming-up (${WARMUP_MIN} min). Bij minder tijd gaan eerst de isolatie-oefeningen eruit; bankdrukken, row en deadlift blijven altijd heel.`));
+  const list = el('div', { style: 'display:flex;flex-direction:column;gap:8px' });
+  const rowFor = (label, capTotal) => {
+    const liftCap = capTotal ? Math.max(15, capTotal - WARMUP_MIN) : null;
+    const b = buildWorkout(session, adjust, liftCap);
+    const est = estimateMinutes(b) + WARMUP_MIN;
+    const keep = b.map(x => `${x.exercise?.nameNL || x.ex} ${x.sets}×`).join(' · ');
+    const gone = (b.dropped || []).map(x => x.exercise?.nameNL || x.ex);
+    return el('button', { class: 'btn-secondary btn-block', style: 'text-align:left;padding:12px 14px', onclick: () => { close(); openWorkout(session, adjust, ctx, liftCap); } },
+      el('div', { class: 'spread' }, el('strong', {}, label), el('span', { class: 'pill' }, `~${est} min`)),
+      el('div', { class: 'tiny', style: 'margin-top:4px;white-space:normal;font-weight:400' }, keep),
+      gone.length ? el('div', { class: 'tiny dim', style: 'margin-top:2px;white-space:normal;font-weight:400' }, `eraf: ${gone.join(', ')}`) : null);
+  };
+  for (const m of opts) list.append(rowFor(`${m} minuten`, m));
+  list.append(rowFor('Alle tijd', null));
+  box.append(list);
+  const close = sheet(box);
+}
+
 function openAdhocPicker(ctx) {
   const myEq = new Set(S().equipment);
   if (S().hasPullUpBar) myEq.add('pullUpBar');

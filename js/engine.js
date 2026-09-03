@@ -190,20 +190,59 @@ export function heavyTargetForWeek(iso) {
   return Math.max(1, Math.min(wish, longDays || 1));
 }
 
-/** Geschatte duur van een uitgewerkte sessie in minuten (incl. rust + wisseltijd). */
+/** Geschatte duur van een uitgewerkte sessie in minuten (incl. rust + wisseltijd; supersets delen hun rust). */
 export function estimateMinutes(slots) {
   let sec = 0;
-  for (const s of slots) sec += s.sets * (s.rest + 45) + 40;
+  const seen = new Set();
+  for (const s of slots) {
+    const partner = s.ss ? slots.find(o => o !== s && o.ss === s.ss) : null;
+    if (partner && seen.has(s.ss)) continue;
+    if (partner) {
+      seen.add(s.ss);
+      const n = Math.max(s.sets, partner.sets);
+      sec += n * (s.rest + 110) + 90; // twee sets werk + loggen per ronde, één rust
+    } else {
+      sec += s.sets * (s.rest + 55) + 60;
+    }
+  }
   return Math.round(sec / 60);
 }
 
-/** Pas de sessie in de beschikbare tijd: eerst sets trimmen, dan oefeningen laten vallen. */
+/** Warming-up (RAMP) kost ook tijd; die hoort bij het tijdsbudget van een zware sessie. */
+export const WARMUP_MIN = 8;
+
+const COMPOUND_MUSCLES = new Set(['chest', 'back', 'quadriceps', 'hamstrings', 'glutes', 'full']);
+const CORE_MUSCLES = new Set(['core', 'abs']);
+
+/** Compound = meergewrichts-oefening die de grote spiergroepen traint; die blijft bij tijdnood altijd staan. */
+const ISOLATION_IDS = new Set(['back_band_pull_apart', 'shoulders_reverse_fly', 'chest_dumbbell_fly', 'chest_band_fly', 'quads_leg_extension', 'hams_leg_curl', 'calves_calf_raise']);
+export function isCompound(ex) {
+  if (!ex) return false;
+  if (ISOLATION_IDS.has(ex.id)) return false;
+  if (COMPOUND_MUSCLES.has(ex.muscle)) return true;
+  if (ex.muscle === 'shoulders' && (ex.secondary || []).includes('triceps')) return true; // presses
+  return false;
+}
+
+/**
+ * Pas de sessie in de beschikbare tijd. Volgorde (jouw keuze: "isolatie eruit, compounds heel"):
+ * 1. isolatie-oefeningen eraf (curls, raises, kickbacks), van achteren naar voren
+ * 2. core eraf
+ * 3. pas dan sets van de compounds trimmen (hoofdlift houdt 3, rest 2)
+ * 4. uiterste nood: compounds van achteren laten vallen (minimaal 2 blijven)
+ */
 export function fitToTime(slots, maxMin) {
   if (!maxMin || !slots.length) return { slots, trimmed: null };
   let out = slots.map(s => ({ ...s }));
   if (estimateMinutes(out) <= maxMin) return { slots: out, trimmed: null };
-  let droppedSets = 0, droppedEx = 0;
-  // 1. Sets afpellen van achteren (hoofdlift houdt minimaal 3, rest minimaal 2)
+  const dropped = [];
+  let droppedSets = 0;
+  const tier = s => isCompound(s.exercise) ? 2 : CORE_MUSCLES.has(s.exercise?.muscle) ? 1 : 0;
+  for (const t of [0, 1]) {
+    for (let i = out.length - 1; i >= 0 && estimateMinutes(out) > maxMin; i--) {
+      if (tier(out[i]) === t) { dropped.push(out[i]); out.splice(i, 1); }
+    }
+  }
   for (let guard = 0; guard < 40 && estimateMinutes(out) > maxMin; guard++) {
     let changed = false;
     for (let i = out.length - 1; i >= 0; i--) {
@@ -212,12 +251,11 @@ export function fitToTime(slots, maxMin) {
     }
     if (!changed) break;
   }
-  // 2. Nog te lang? Laatste oefeningen laten vallen (hoofdlift + 1 blijft altijd staan)
-  while (estimateMinutes(out) > maxMin && out.length > 2) { out.pop(); droppedEx++; }
+  while (estimateMinutes(out) > maxMin && out.length > 2) { dropped.push(out.pop()); }
   const parts = [];
-  if (droppedEx) parts.push(`${droppedEx} oefening${droppedEx > 1 ? 'en' : ''} eraf`);
-  if (droppedSets) parts.push(`${droppedSets} set${droppedSets > 1 ? 's' : ''} minder`);
-  return { slots: out, trimmed: parts.length ? `Ingekort tot ~${maxMin} min: ${parts.join(' en ')}.` : null };
+  if (dropped.length) parts.push(`${dropped.length} oefening${dropped.length > 1 ? 'en' : ''} eraf (${dropped.map(d => d.exercise?.short || d.exercise?.nameNL || d.ex).join(', ')})`);
+  if (droppedSets) parts.push(`${droppedSets} set${droppedSets > 1 ? 's' : ''} minder op de compounds`);
+  return { slots: out, trimmed: parts.length ? `Ingekort: ${parts.join(', ')}.` : null, dropped };
 }
 
 // ---------- Wachtrij-planner ----------
@@ -260,8 +298,14 @@ export function schedule(targetIso, fromIso = todayISO()) {
   let cursor = fromIso;
   while (cursor <= targetIso) {
     const swap = get().swaps[cursor];
-    let pick, reason = '';
-    if (swap && SESSIONS[swap]) {
+    const logged = get().logs.filter(l => l.date === cursor && SESSIONS[l.sessionId]);
+    let pick, reason = '', fromLog = false;
+    if (logged.length) {
+      // Al getraind op deze dag: dat ís de sessie van vandaag — geen snack er nog achteraan.
+      pick = logged[logged.length - 1].sessionId;
+      reason = 'vandaag gedaan';
+      fromLog = true;
+    } else if (swap && SESSIONS[swap]) {
       pick = swap;
       reason = 'handmatig gekozen';
     } else {
@@ -316,7 +360,9 @@ export function schedule(targetIso, fromIso = todayISO()) {
     out.push({ iso: cursor, sessionId: pick, reason });
     // bijwerken van sim-status
     const sess = SESSIONS[pick];
-    if (sess.type === 'heavy') {
+    if (fromLog) {
+      // echte logs zitten al in hlogs/heavyByWeek
+    } else if (sess.type === 'heavy') {
       const wkKey = mondayOf(cursor);
       heavyByWeek[wkKey] = (heavyByWeek[wkKey] || 0) + 1;
       lastHeavyDate = cursor; lastHeavyId = pick;
@@ -335,6 +381,134 @@ export function plannedSession(iso) {
   if (iso < today) return null; // verleden = logs
   const day = schedule(iso, today).pop();
   return { session: SESSIONS[day.sessionId], reason: day.reason };
+}
+
+// ---------- Varianten + planner-voorstellen ----------
+// Blokken die de planner kan inzetten als de situatie erom vraagt:
+//   express = alleen de compounds, ~30 min incl. warming-up (isolatie eruit)
+//   upper   = zonder beenwerk (na een zware rit, of vóór een zware benen-sportdag)
+// De planner stelt voor; jij bevestigt. Pas dan wordt het schema aangepast.
+
+const LEG_MUSCLES = ['quadriceps', 'hamstrings', 'glutes', 'calves'];
+export const VARIANT_NL = { express: 'Express', upper: 'Bovenlichaam' };
+export const EXPRESS_CAP = 26; // minuten liften (+ warming-up ≈ 33)
+
+/** Sessie met een variant toegepast. Geeft een nieuwe sessie terug (zelfde id: telt gewoon mee in de A/B-cyclus). */
+export function applyVariant(session, variant) {
+  if (!session || !variant || session.type !== 'heavy') return session;
+  if (variant === 'upper') {
+    const slots = session.slots.filter(sl => !LEG_MUSCLES.includes(byId[sl.ex]?.muscle));
+    return { ...session, slots, variant, name: session.name + ' (bovenlichaam)', short: (session.short || '') + ' · boven',
+      focus: session.focus.filter(m => !LEG_MUSCLES.includes(m)), durationMin: Math.max(25, session.durationMin - 10) };
+  }
+  if (variant === 'express') {
+    return { ...session, variant, name: session.name + ' (express)', short: (session.short || '') + ' · express', durationMin: 35, timeCap: EXPRESS_CAP };
+  }
+  return session;
+}
+
+/** Variant die voor een dag is bevestigd (of null). */
+export function variantOn(iso) { return get().variants?.[iso] || null; }
+
+/**
+ * Voorstellen van de planner voor vandaag. Elk voorstel: {id, title, why, changes:[tekst], apply:[{iso, session?, variant?}]}.
+ * Al beantwoorde voorstellen (state.proposals) komen niet terug.
+ */
+export function proposals(iso, cache) {
+  const out = [];
+  const answered = get().proposals || {};
+  const push = (p) => { if (!answered[p.id]) out.push(p); };
+  const today = todayISO();
+  if (iso !== today) return out;
+  if (get().logs.some(l => l.date === iso && SESSIONS[l.sessionId]?.type === 'heavy')) return out; // al getraind
+
+  const plan = plannedSession(iso);
+  const base = plan?.session;
+  const mon = mondayOf(iso);
+  const target = heavyTargetForWeek(iso);
+  const doneThisWeek = heavyLogs().filter(l => l.date >= mon && l.date <= iso).length;
+  const need = Math.max(0, target - doneThisWeek);
+  const lastId = heavyLogs().slice(-1)[0]?.sessionId;
+  const candidate = nextInCycle(lastId);
+  const candName = SESSIONS[candidate]?.short || SESSIONS[candidate]?.name;
+  const dayName = d => DAY_FULL[dowOf(d)];
+  const minsToday = minutesOn(iso);
+  const yday = icu.loadSummary(cache, addDays(iso, -1));
+  const planToday = plannedSummary(iso);
+  const planTomorrow = plannedSummary(addDays(iso, 1));
+  const curVariant = variantOn(iso);
+
+  // Hoeveel dagen (vandaag t/m zondag) staan er nog echt een zware sessie gepland?
+  const rest = [];
+  for (let d = iso; d <= addDays(mon, 6); d = addDays(d, 1)) rest.push(d);
+  const sched = schedule(addDays(mon, 6), iso);
+  const heavyPlanned = sched.filter(x => SESSIONS[x.sessionId]?.type === 'heavy').length;
+
+  // 1. Weekdoel haalt niet meer met de dagen die er nog zijn → express op een korte/sportdag
+  let catchupDay = null;
+  if (need > heavyPlanned) {
+    const freeDay = rest.find(d => {
+      const s = sched.find(x => x.iso === d);
+      return s && SESSIONS[s.sessionId]?.type !== 'heavy' && (minutesOn(d) >= 20 || plannedSummary(d).any) && !get().swaps[d];
+    });
+    if (freeDay) {
+      catchupDay = freeDay;
+      const sport = plannedSummary(freeDay);
+      const sportNm = sport.any ? sport.list.map(p => icu.TYPE_NL[p.type] || p.type).join(', ').toLowerCase() : null;
+      push({
+        id: `catchup:${freeDay}:${candidate}`,
+        title: `Weekdoel in gevaar: nog ${need} sessie${need > 1 ? 's' : ''}, ${heavyPlanned} ingepland`,
+        why: sportNm
+          ? `${dayName(freeDay)} is een ${sportNm}-dag. Een express-sessie (~35 min, alleen de compounds) past daar prima naast: compounds houden de prikkel, isolatie laat je liggen.`
+          : `${dayName(freeDay)} heb je ${minutesOn(freeDay)} min. Genoeg voor een express-sessie: compounds heel, isolatie eruit.`,
+        changes: [`${dayName(freeDay)}: ${candName} · Express (~35 min)`],
+        apply: [{ iso: freeDay, session: candidate, variant: 'express' }],
+      });
+    }
+  }
+
+  // 2. Vandaag zware sessie gepland, maar benen zijn gisteren/morgen zwaar belast → bovenlichaam-versie
+  if (base?.type === 'heavy' && curVariant !== 'upper' && (yday.legHeavy && yday.hard || planTomorrow.legHard)) {
+    const legs = base.slots.filter(sl => LEG_MUSCLES.includes(byId[sl.ex]?.muscle)).map(sl => byId[sl.ex]?.nameNL || sl.ex);
+    if (legs.length) {
+      push({
+        id: `upper:${iso}`,
+        title: yday.legHeavy && yday.hard ? `Gisteren zwaar gefietst (load ${yday.load})` : 'Morgen zware benen-sport',
+        why: `Je benen krijgen hun prikkel al van het fietsen. Vandaag alleen bovenlichaam: ${legs.join(' en ')} eruit, de rest gewoon voluit. Het beenwerk komt in de volgende sessie terug.`,
+        changes: [`Vandaag: ${base.short || base.name} · Bovenlichaam (${legs.join(', ')} eruit)`],
+        apply: [{ iso, variant: 'upper' }],
+      });
+    }
+  }
+
+  // 3. Vandaag te weinig tijd voor de volledige sessie, maar er is wel een sessie nodig → express in plaats van snack
+  if (base?.type !== 'heavy' && need > 0 && minsToday >= 20 && minsToday < 40 && !get().swaps[iso] && !planToday.hard && catchupDay !== iso) {
+    push({
+      id: `express:${iso}:${candidate}`,
+      title: `Vandaag ${minsToday} min — express in plaats van een snack?`,
+      why: `Een korte sessie met alleen de compounds geeft meer dan een snack: je hoofdliften krijgen hun sets, en je weekdoel (${target} sessies) blijft haalbaar.`,
+      changes: [`Vandaag: ${candName} · Express (~35 min)`],
+      apply: [{ iso, session: candidate, variant: 'express' }],
+    });
+  }
+
+  return out;
+}
+
+const DAY_FULL = ['maandag', 'dinsdag', 'woensdag', 'donderdag', 'vrijdag', 'zaterdag', 'zondag'];
+
+/** Voorstel doorvoeren: sessie + variant op de betreffende dagen zetten. */
+export function acceptProposal(p) {
+  update(st => {
+    for (const a of p.apply) {
+      if (a.session) st.swaps[a.iso] = a.session;
+      if (a.variant) st.variants[a.iso] = a.variant;
+    }
+    st.proposals[p.id] = 'accepted';
+  });
+}
+export function dismissProposal(p) {
+  update(st => { st.proposals[p.id] = 'dismissed'; });
 }
 
 // ---------- Readiness-regels ----------
@@ -462,12 +636,20 @@ export function advise(iso, cache) {
     }
   }
 
+  // Al gedaan vandaag: geen readiness-gedoe meer, en zeker geen extra snack.
+  if (get().logs.some(l => l.date === iso && l.sessionId === base.id)) {
+    return { session: applyVariant(base, variantOn(iso)), base, level: 'go', done: true, adjust: { setFactor: mesoFactor, rirBonus: mesoRir, restBonus: 0 }, deload, form, meso, plannerReason: planned.reason,
+      reasons: ['Vandaag al gedaan — herstel is nu het werk. Eten, slapen, morgen weer.'] };
+  }
+
   if (level === 'go' && reasons.filter(r => !r.startsWith('Planner') && !r.startsWith('Opbouwweek')).length === 0 && base.type === 'heavy') {
     const f = form != null ? ` (vorm ${form > 0 ? '+' + form : form}${sleep != null ? `, ${sleep.toFixed(1)}u slaap` : ''})` : '';
     reasons.unshift(`Je bent er klaar voor${f} — voluit trainen.`);
   }
 
-  return { session, base, level, reasons, adjust, deload, form, meso, plannerReason: planned.reason };
+  const variant = variantOn(iso);
+  if (variant && session.id === base.id) { session = applyVariant(session, variant); reasons.push(`Variant bevestigd: ${VARIANT_NL[variant]}.`); }
+  return { session, base, level, reasons, adjust, deload, form, meso, plannerReason: planned.reason, variant };
 }
 
 /**
@@ -566,6 +748,7 @@ export function buildWorkout(session, adjust = { setFactor: 1, rirBonus: 0, rest
     const fitted = fitToTime(built, timeCapMin);
     built = fitted.slots;
     if (fitted.trimmed) built.trimmedNote = fitted.trimmed;
+    built.dropped = fitted.dropped || [];
   }
   return built;
 }
@@ -639,7 +822,7 @@ export function suggestWeight(exId, repRange) {
     if (rirs.length) avgRir = rirs.reduce((t, r) => t + r, 0) / rirs.length;
     for (const s of prev.sets) { topReps = Math.max(topReps, s.reps); minReps = Math.min(minReps, s.reps); }
   }
-  const w = last?.weight ?? 0;
+  const w = last?.weight ?? (prev ? Math.max(0, ...prev.sets.map(s => s.weight || 0)) : 0);
   const reps = last?.reps ?? topReps;
   const rangeFull = reps >= repRange[1];
 
@@ -1287,6 +1470,16 @@ function csvRows(text) {
 }
 
 /** Puur lichaamsgewicht? Dan heeft een gewicht invullen geen zin. */
+/** Kg die één set daadwerkelijk verplaatst: bij twee dumbbells log je het gewicht per stuk, dus ×2 voor volume. */
+export function setKg(s) {
+  return (s.weight || 0) * (byId[s.ex]?.dumbbells || 1);
+}
+
+/** Tonnage (kg × reps) van een log, met dubbele dumbbells meegeteld. */
+export function logTonnage(log) {
+  return Math.round(log.sets.reduce((t, s) => t + (s.done ? setKg(s) * (s.reps || 0) : 0), 0));
+}
+
 export function isBodyweightOnly(ex) {
   if (!ex) return false;
   return ex.equipment.every(q => ['bodyweight', 'pullUpBar', 'bench', 'inclineBench', 'abWheel'].includes(q));

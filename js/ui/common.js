@@ -94,7 +94,7 @@ export function fmtTime(sec) {
    ============================================================ */
 
 /** Echte video-loop (6 sec, lokaal, geen reclame, geen netwerk). Beste optie. */
-export function clipBlock(exercise, { tag = 'Demo' } = {}) {
+export function clipBlock(exercise, { tag = '', maxVh = 0.46 } = {}) {
   if (!exercise?.clip) return null;
   const box = el('div', { class: 'demo clip' });
   const v = el('video', {
@@ -116,16 +116,16 @@ export function clipBlock(exercise, { tag = 'Demo' } = {}) {
   // vierkant, YMove staand. Een block-element met aspect-ratio vult altijd de
   // volle breedte en knijpt dan de hoogte af — daarom breedte én hoogte zelf
   // berekenen, passend binnen de container en maximaal 46% van het scherm.
-  v.addEventListener('loadedmetadata', () => fitClipBox(box, v.videoWidth, v.videoHeight), { once: true });
+  v.addEventListener('loadedmetadata', () => fitClipBox(box, v.videoWidth, v.videoHeight, maxVh), { once: true });
   return box;
 }
 
 /** Kader op maat van het beeld: past in de breedte, niet hoger dan 46vh, exact de verhouding. */
-export function fitClipBox(box, w, h) {
+export function fitClipBox(box, w, h, maxVh = 0.46) {
   if (!w || !h) return;
   const r = w / h;
   const maxW = box.parentElement?.clientWidth || window.innerWidth;
-  const maxH = window.innerHeight * 0.46;
+  const maxH = window.innerHeight * maxVh;
   let bw = maxW, bh = bw / r;
   if (bh > maxH) { bh = maxH; bw = bh * r; }
   box.style.aspectRatio = `${w} / ${h}`;
@@ -139,12 +139,12 @@ export function visualBlock(exercise, opts) {
 }
 
 /** Korte demo-animatie (2 frames, lokaal, geen reclame). Valt terug op YouTube-thumb. */
-export function demoBlock(exercise, { tag = 'Demo' } = {}) {
+export function demoBlock(exercise, { tag = '' } = {}) {
   if (!exercise?.demo) return null;
   const box = el('div', { class: 'demo' });
   const a = el('img', { src: `assets/demos/${exercise.id}/0.webp`, alt: '', class: 'on', loading: 'lazy' });
   const b = el('img', { src: `assets/demos/${exercise.id}/1.webp`, alt: '', loading: 'lazy' });
-  box.append(a, b, el('span', { class: 'tag' }, tag));
+  box.append(...[a, b, tag ? el('span', { class: 'tag' }, tag) : null].filter(Boolean));
   let on = 0;
   const iv = setInterval(() => {
     if (!document.body.contains(box)) return clearInterval(iv);

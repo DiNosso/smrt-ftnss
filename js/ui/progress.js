@@ -2,7 +2,7 @@
 
 import { el, fmtDate, sheet, toast, cardHead, explain, bodyMap, statRow, ICO } from './common.js';
 import { get, S, update, todayISO } from '../state.js';
-import { weeklyVolume, VOLUME_TARGETS, weightTrend, detectPlateaus, rebuildLastWeights, exerciseHistory, exercisePRs, e1rm, volumeHistory, effortQuality, muscleStatus } from '../engine.js';
+import { logTonnage, weeklyVolume, VOLUME_TARGETS, weightTrend, detectPlateaus, rebuildLastWeights, exerciseHistory, exercisePRs, e1rm, volumeHistory, effortQuality, muscleStatus } from '../engine.js';
 import { MUSCLE_NL, byId } from '../data/exercises.js';
 import { SESSIONS } from '../data/program.js';
 import * as icu from '../icu.js';
@@ -202,7 +202,7 @@ export function renderProgress(app, ctx) {
   if (!logs.length) histCard.append(el('p', { class: 'tiny dim mb0' }, 'Nog niets gelogd.'));
   for (const l of logs) {
     const setCount = l.sets.filter(s => s.done).length;
-    const tonnage = Math.round(l.sets.reduce((t, s) => t + (s.done ? (s.weight || 0) * (s.reps || 0) : 0), 0));
+    const tonnage = logTonnage(l);
     const sessName = SESSIONS[l.sessionId]?.name?.split('·')[1]?.trim() || (l.sessionId === 'adhoc' ? 'Vrije workout' : l.sessionId);
     histCard.append(el('div', { class: 'exrow', onclick: () => openLog(l, ctx) },
       el('div', { class: 'grow' },

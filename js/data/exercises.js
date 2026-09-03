@@ -23,6 +23,7 @@ export const EXERCISES = [
  },
  {
   "id": "chest_dumbbell_bench_press",
+  "dumbbells": 2,
   "name": "Dumbbell Bench Press",
   "nameNL": "Dumbbell Bankdrukken",
   "muscle": "chest",
@@ -62,6 +63,7 @@ export const EXERCISES = [
  },
  {
   "id": "chest_incline_dumbbell_press",
+  "dumbbells": 2,
   "name": "Incline Dumbbell Press",
   "nameNL": "Schuine Dumbbell Press",
   "muscle": "chest",
@@ -83,6 +85,7 @@ export const EXERCISES = [
  },
  {
   "id": "chest_dumbbell_fly",
+  "dumbbells": 2,
   "name": "Dumbbell Fly",
   "nameNL": "Dumbbell Fly",
   "muscle": "chest",
@@ -460,6 +463,7 @@ export const EXERCISES = [
  },
  {
   "id": "shoulders_dumbbell_press",
+  "dumbbells": 2,
   "name": "Dumbbell Shoulder Press",
   "nameNL": "Dumbbell Shoulder Press",
   "muscle": "shoulders",
@@ -478,6 +482,7 @@ export const EXERCISES = [
  },
  {
   "id": "shoulders_lateral_raise",
+  "dumbbells": 2,
   "name": "Lateral Raise",
   "nameNL": "Lateral Raise",
   "muscle": "shoulders",
@@ -498,6 +503,7 @@ export const EXERCISES = [
  },
  {
   "id": "shoulders_front_raise",
+  "dumbbells": 2,
   "name": "Front Raise",
   "nameNL": "Front Raise",
   "muscle": "shoulders",
@@ -514,6 +520,7 @@ export const EXERCISES = [
  },
  {
   "id": "shoulders_reverse_fly",
+  "dumbbells": 2,
   "name": "Reverse Fly",
   "nameNL": "Reverse Fly",
   "muscle": "shoulders",
@@ -569,6 +576,7 @@ export const EXERCISES = [
  },
  {
   "id": "shoulders_arnold_press",
+  "dumbbells": 2,
   "name": "Arnold Press",
   "nameNL": "Arnold Press",
   "muscle": "shoulders",
@@ -639,6 +647,7 @@ export const EXERCISES = [
  },
  {
   "id": "biceps_dumbbell_curl",
+  "dumbbells": 2,
   "name": "Dumbbell Curl",
   "nameNL": "Dumbbell Curl",
   "muscle": "biceps",
@@ -657,6 +666,7 @@ export const EXERCISES = [
  },
  {
   "id": "biceps_hammer_curl",
+  "dumbbells": 2,
   "name": "Hammer Curl",
   "nameNL": "Hammer Curl",
   "muscle": "biceps",
@@ -726,6 +736,7 @@ export const EXERCISES = [
  },
  {
   "id": "biceps_incline_curl",
+  "dumbbells": 2,
   "name": "Incline Dumbbell Curl",
   "nameNL": "Incline Dumbbell Curl",
   "muscle": "biceps",
@@ -743,6 +754,7 @@ export const EXERCISES = [
  },
  {
   "id": "biceps_spider_curl",
+  "dumbbells": 2,
   "name": "Spider Curl",
   "nameNL": "Spider Curl",
   "muscle": "biceps",
@@ -989,6 +1001,7 @@ export const EXERCISES = [
  },
  {
   "id": "quads_bulgarian_split_squat",
+  "dumbbells": 2,
   "name": "Bulgarian Split Squat",
   "nameNL": "Bulgaarse Split Squat",
   "muscle": "quadriceps",
@@ -1147,6 +1160,7 @@ export const EXERCISES = [
  },
  {
   "id": "hams_stiff_leg_deadlift",
+  "dumbbells": 2,
   "name": "Stiff Leg Deadlift",
   "nameNL": "Stiff Leg Deadlift",
   "muscle": "hamstrings",
@@ -1618,6 +1632,7 @@ export const EXERCISES = [
  },
  {
   "id": "full_man_maker",
+  "dumbbells": 2,
   "name": "Man Maker",
   "nameNL": "Man Maker",
   "muscle": "fullBody",
@@ -1791,6 +1806,7 @@ export const EXERCISES = [
  },
  {
   "id": "forearms_farmer_walk",
+  "dumbbells": 2,
   "name": "Farmer's Walk",
   "nameNL": "Farmer's Walk",
   "muscle": "forearms",

@@ -453,7 +453,7 @@ details.explain.solo { border-top: none; margin-top: 0; padding-top: 0; }
    contain i.p.v. cover: de bronnen zitten al krap in beeld, dus nooit bijsnijden.
    Lichte achtergrond + kleine marge zodat een dumbbell aan de rand niet "plakt". */
 .demo.clip { aspect-ratio: 1 / 1; max-height: 46vh; max-width: 100%; margin-inline: auto; background: #f3f4f3; }
-.demo.clip video { position: absolute; inset: 3%; width: 94%; height: 94%; object-fit: contain; background: transparent; }
+.demo.clip video { position: absolute; inset: 7%; width: 86%; height: 86%; object-fit: contain; background: transparent; }
 .demo.clip-failed { display: none; }
 .tv .tvvid video { position: absolute; inset: 2%; width: 96%; height: 96%; object-fit: contain; }
 
@@ -591,3 +591,23 @@ body.resting #app { padding-bottom: calc(var(--tabbar-h) + 96px); }
    readiness-ring past — beide zijn vast, de tekst is het enige dat kan geven. */
 .brandline { display: flex; align-items: center; gap: 8px; font-size: clamp(1.35rem, 7.2vw, 2.1rem); white-space: nowrap; }
 .brandmark { width: .8em; height: .8em; flex: none; }
+
+/* ---------- Gefocuste speler (één oefening per scherm) ---------- */
+.pager { position: relative; overflow-x: clip; }
+.page.from-right { animation: pageInR .26s cubic-bezier(.22, 1, .36, 1); }
+.page.from-left { animation: pageInL .26s cubic-bezier(.22, 1, .36, 1); }
+@keyframes pageInR { from { transform: translateX(48px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes pageInL { from { transform: translateX(-48px); opacity: 0; } to { transform: none; opacity: 1; } }
+.pnav { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+.pnav .pbtn { width: 40px; padding: 6px 0; font-size: 1.3rem; line-height: 1; text-align: center; }
+.pnav .pbtn:disabled { opacity: .25; }
+.pnav .pos { display: block; width: 100%; background: none; border: none; color: var(--text); font-size: .82rem; font-weight: 600; padding: 2px 0; text-align: center; }
+.pnav .dots { display: flex; gap: 4px; justify-content: center; margin-top: 3px; }
+.pnav .dots i { width: 6px; height: 6px; border-radius: 50%; background: rgba(255, 255, 255, .14); transition: transform .2s ease; }
+.pnav .dots i.meta { width: 4px; height: 4px; align-self: center; }
+.pnav .dots i.done { background: var(--secondary); }
+.pnav .dots i.on { background: var(--accent); transform: scale(1.35); }
+.expage { padding-top: 14px; }
+.exblock .demo.clip { margin-top: 4px; }
+.ssblock + .ssblock { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+.exrow.cur { box-shadow: inset 3px 0 0 var(--accent); }
