@@ -44,6 +44,7 @@ const DEFAULTS = {
   tired: {},                   // {'YYYY-MM-DD': 'moe'|'kapot'} handmatige override
   swaps: {},                   // {'YYYY-MM-DD': sessionId} handmatig gewisselde dagen
   variants: {},                // {'YYYY-MM-DD': 'express'|'upper'} variant van de sessie op die dag
+  dayIntent: {},               // {'YYYY-MM-DD': 'full'|'short'|'none'} jouw wens voor die dag; de planner kiest de sessie
   proposals: {},               // {proposalId: 'accepted'|'dismissed'} planner-voorstellen waar je al op reageerde
   sportSkips: {},              // {'YYYY-MM-DD': true} vaste sport gaat deze dag niet door
   lastWeights: {},             // {exerciseId: {weight, reps, date}}

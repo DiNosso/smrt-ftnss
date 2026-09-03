@@ -7,7 +7,7 @@ import * as icu from '../icu.js';
 import {
   advise, buildWorkout, mesoInfo, muscleStatus, weekStreak, adhocSession,
   mondayOf, minutesOn, heavyTargetForWeek, weeklyVolume, VOLUME_TARGETS, plannedOn, readinessSignals, plannedSplitOn,
-  sportDay, plannedSession, detectPlateaus, logTonnage, estimateMinutes, WARMUP_MIN, proposals, acceptProposal, dismissProposal, VARIANT_NL,
+  sportDay, plannedSession, detectPlateaus, logTonnage, estimateMinutes, WARMUP_MIN, proposals, acceptProposal, dismissProposal, VARIANT_NL, intentOn, setIntent,
 } from '../engine.js';
 import { SESSIONS } from '../data/program.js';
 import { openDayPicker } from './week.js';
@@ -440,21 +440,21 @@ function checkinCard(iso, ctx) {
 }
 
 /** Kies oefeningen voor een vrije workout. */
-/** Uitklapbaar in de sessiekaart: andere sessie kiezen, vrije workout of vandaag overslaan. */
+/** Uitklapbaar in de sessiekaart: kort / volledig / niet vandaag, of een vrije workout. De planner kiest de sessie. */
 function ietsAnders(iso, ctx) {
-  const swapped = get().swaps[iso];
+  const intent = intentOn(iso);
+  const pick = (val, msg) => { setIntent(iso, val); toast(msg); ctx.render(); };
   return explain('Iets anders doen?',
     el('div', { class: 'row wrap' },
+      el('button', { class: 'btn-sm' + (intent === 'full' ? ' btn-secondary' : ''), onclick: () => pick('full', '💪 Volledige sessie — schema aangepast') }, '💪 Volledig'),
+      el('button', { class: 'btn-sm' + (intent === 'short' ? ' btn-secondary' : ''), onclick: () => pick('short', '⚡ Korte sessie — schema aangepast') }, '⚡ Kort (~35 min)'),
+      el('button', { class: 'btn-sm' + (intent === 'none' ? ' btn-secondary' : ''), style: 'border-color:rgba(224,122,122,.4)', onclick: () => pick('none', 'Rustdag — sessie schuift op') }, '🚫 Vandaag niet'),
       el('button', { class: 'btn-sm', onclick: () => openAdhocPicker(ctx) }, '+ Vrije workout'),
-      el('button', { class: 'btn-sm', style: 'border-color:rgba(224,122,122,.4)', onclick: () => {
-        update(st => { st.swaps[iso] = 'rest'; }); ctx.render();
-      } }, '🚫 Vandaag niet'),
-      Object.values(SESSIONS).filter(s => s.id !== 'rest').map(s =>
-        el('button', { class: 'btn-sm' + (swapped === s.id ? ' btn-secondary' : ''), onclick: () => { update(st => { st.swaps[iso] = s.id; }); ctx.render(); } },
-          s.short || s.name.split('·')[1]?.trim() || s.name)),
-      swapped ? el('button', { class: 'btn-sm btn-ghost', style: 'color:var(--accent)', onclick: () => { update(st => { delete st.swaps[iso]; }); ctx.render(); } }, '↺ Automatisch') : null),
+      (intent || get().swaps[iso] || get().variants[iso]) ? el('button', { class: 'btn-sm btn-ghost', style: 'color:var(--accent)', onclick: () => {
+        update(st => { delete st.variants[iso]; }); pick(null, 'Terug naar automatische planning');
+      } }, '↺ Automatisch') : null),
     el('p', { class: 'tiny dim mt mb0' },
-      'Sla je een zware sessie over, dan verdwijnt die niet: de wachtrij schuift op naar de eerstvolgende vrije dag waarop je spieren hersteld zijn. Een vrije workout telt gewoon mee in je volume en herstel.'));
+      'Jij zegt kort, volledig of niet; welke sessie het wordt (A of B) volgt uit je cyclus, en de rest van de week schuift vanzelf mee. Een vrije workout telt gewoon mee in je volume en herstel.'));
 }
 
 /** Voor de start: hoeveel tijd heb je? De sessie wordt daarop ingekort (isolatie eruit, compounds heel). */

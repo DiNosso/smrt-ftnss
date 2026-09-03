@@ -2,7 +2,7 @@
 
 import { el, DAY_NL, sheet, toast, fmtDate, explain, cardHead, ICO } from './common.js';
 import { get, update, todayISO, addDays } from '../state.js';
-import { schedule, mondayOf, mesoInfo, plannedOn, SPORT_CHOICES, fixedSportsOn, plannedSession, applyVariant, variantOn, VARIANT_NL } from '../engine.js';
+import { schedule, mondayOf, mesoInfo, plannedOn, SPORT_CHOICES, fixedSportsOn, plannedSession, applyVariant, variantOn, VARIANT_NL, intentOn, setIntent } from '../engine.js';
 import { SESSIONS } from '../data/program.js';
 import * as icu from '../icu.js';
 
@@ -88,9 +88,38 @@ export function openDayPicker(iso, redraw) {
   const swap = get().swaps[iso];
   const box = el('div', {},
     el('h3', {}, fmtDate(iso)),
-    el('p', { class: 'tiny dim' }, 'Plan een andere sport of pas de krachtsessie aan. De wachtrij plant er automatisch omheen — een gemiste sessie schuift gewoon op.'));
+    el('p', { class: 'tiny dim' }, 'Zeg wat je deze dag wilt; de planner kiest de sessie en schuift de rest van de week mee.'));
   const close = sheet(box);
   const done = (msg) => { close(); toast(msg); redraw(); };
+
+  // --- krachtsessie: jij zegt alleen kort / volledig / niet; de planner kiest A of B ---
+  box.append(el('h5', { class: 'mt' }, 'Krachtsessie'));
+  const intent = intentOn(iso);
+  const planned = plannedSession(iso);
+  const plannedSess = planned?.session ? applyVariant(planned.session, variantOn(iso)) : null;
+  if (plannedSess) {
+    box.append(el('div', { class: 'tiny dim', style: 'margin-bottom:8px' },
+      `Nu gepland: ${plannedSess.type === 'rest' ? 'rust' : plannedSess.name.replace(/^.*·\s*/, '')}${planned.reason ? ` · ${planned.reason}` : ''}`));
+  }
+  const kies = (val, msg) => { setIntent(iso, val); done(msg); };
+  const opt = (val, icon, label, sub) => el('button', {
+    class: 'btn-block mt' + (intent === val ? ' btn-secondary' : ''), style: 'text-align:left;padding:12px 14px',
+    onclick: () => kies(val, val ? 'Schema aangepast' : 'Terug naar automatische planning'),
+  }, el('div', {}, `${icon} ${label}`), el('div', { class: 'tiny dim', style: 'font-weight:400;white-space:normal' }, sub));
+  box.append(
+    opt('full', '💪', 'Volledige sessie', '± 50 min · alles erin. De planner kiest A of B op basis van je cyclus.'),
+    opt('short', '⚡', 'Korte sessie', '± 35 min · alleen de compounds, isolatie eruit. Telt gewoon mee voor je weekdoel.'),
+    opt('none', '🚫', 'Niet deze dag', 'Rustdag. Je sessie schuift naar de eerstvolgende vrije dag.'));
+  if (plannedSess?.type === 'heavy') {
+    box.append(el('button', { class: 'btn-block mt btn-ghost', onclick: () => openMoveSession(iso, plannedSess, done) }, '↷ Verplaatsen naar een andere dag'));
+  }
+  if (intent || swap || variantOn(iso)) {
+    box.append(el('button', { class: 'btn-block mt btn-ghost', style: 'color:var(--accent)', onclick: () => {
+      update(st => { delete st.variants[iso]; });
+      kies(null, 'Terug naar automatische planning');
+    } }, '↺ Automatische planning'));
+  }
+  box.append(el('p', { class: 'tiny dim mt' }, 'De rest van de week schuift vanzelf mee: zeg je hier "kort", dan plant de app de volgende volledige sessie zo dat je weekdoel en spierherstel kloppen.'));
 
   // --- andere sport plannen ---
   box.append(el('h5', { class: 'mt' }, 'Andere sport plannen'));
@@ -143,31 +172,6 @@ export function openDayPicker(iso, redraw) {
     } }, c.label)));
   box.append(sportRow,
     el('p', { class: 'tiny dim mt' }, 'Op een sportdag plant de app geen krachtsessie. Die schuift door naar je eerstvolgende vrije dag.'));
-
-  // --- krachtsessie aanpassen ---
-  box.append(el('h5', { class: 'mt' }, 'Krachtsessie'));
-  const set = (id) => {
-    update(st => { if (id) st.swaps[iso] = id; else delete st.swaps[iso]; });
-    done(id ? 'Dag aangepast' : 'Terug naar automatische planning');
-  };
-  const planned = iso >= todayISO() ? plannedSession(iso)?.session : null;
-  if (planned && planned.type === 'heavy') {
-    box.append(el('div', { class: 'card raised' },
-      el('div', { class: 'spread' }, el('span', {}, planned.name), el('span', { class: 'pill' }, 'gepland')),
-      el('div', { class: 'row mt' },
-        el('button', { class: 'btn-sm grow', onclick: () => set('rest') }, 'Kan niet'),
-        el('button', { class: 'btn-sm grow', onclick: () => openMoveSession(iso, planned, done) }, 'Verplaatsen →'))));
-  } else {
-    box.append(el('button', { class: 'btn-block mt', style: 'border-color:rgba(224,122,122,.4)', onclick: () => set('rest') }, '🚫 Kan niet / rustdag'));
-  }
-  for (const s of Object.values(SESSIONS).filter(s => s.id !== 'rest')) {
-    box.append(el('button', { class: 'btn-block mt' + (swap === s.id ? ' btn-secondary' : ''), onclick: () => set(s.id) }, s.name));
-  }
-  const variant = variantOn(iso);
-  if (variant) box.append(el('div', { class: 'spread', style: 'padding:6px 0' },
-    el('span', { class: 'tiny dim' }, `Variant: ${VARIANT_NL[variant]}`),
-    el('button', { class: 'btn-sm btn-ghost', style: 'color:var(--accent)', onclick: () => { update(st => { delete st.variants[iso]; }); done('Volledige sessie'); } }, '↺ Volledig')));
-  if (swap) box.append(el('button', { class: 'btn-block mt btn-ghost', style: 'color:var(--accent)', onclick: () => set(null) }, '↺ Automatische planning'));
 }
 
 /** Krachtsessie naar een andere dag verplaatsen (bijv. vrijdag → zaterdag). */
@@ -185,7 +189,7 @@ function openMoveSession(iso, session, done) {
     const sports = plannedOn(d);
     const busy = sports.length ? ` · ${sports.map(p => icu.TYPE_NL[p.type] || p.type).join(', ').toLowerCase()}` : '';
     box.append(el('button', { class: 'btn-block mt', onclick: () => {
-      update(st => { st.swaps[iso] = 'rest'; st.swaps[d] = session.id; });
+      setIntent(iso, 'none'); setIntent(d, session.variant === 'express' ? 'short' : 'full');
       close2(); done(`Verplaatst naar ${dayName(d)}`);
     } }, `${fmtDate(d).replace(/ \d{4}$/, '')}${busy}`));
   }

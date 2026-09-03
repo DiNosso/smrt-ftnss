@@ -298,6 +298,7 @@ export function schedule(targetIso, fromIso = todayISO()) {
   let cursor = fromIso;
   while (cursor <= targetIso) {
     const swap = get().swaps[cursor];
+    const intent = get().dayIntent?.[cursor];
     const logged = get().logs.filter(l => l.date === cursor && SESSIONS[l.sessionId]);
     let pick, reason = '', fromLog = false;
     if (logged.length) {
@@ -305,6 +306,14 @@ export function schedule(targetIso, fromIso = todayISO()) {
       pick = logged[logged.length - 1].sessionId;
       reason = 'vandaag gedaan';
       fromLog = true;
+    } else if (intent === 'none') {
+      pick = 'rest';
+      reason = 'jouw keuze: rust';
+    } else if (intent === 'full' || intent === 'short') {
+      // Jij zegt alleen "kort" of "volledig"; welke sessie (A of B) volgt uit de cyclus,
+      // en de rest van de week schuift daar vanzelf omheen.
+      pick = nextInCycle(lastHeavyId);
+      reason = intent === 'short' ? 'jouw keuze: korte sessie' : 'jouw keuze: volledige sessie';
     } else if (swap && SESSIONS[swap]) {
       pick = swap;
       reason = 'handmatig gekozen';
@@ -408,7 +417,19 @@ export function applyVariant(session, variant) {
 }
 
 /** Variant die voor een dag is bevestigd (of null). */
-export function variantOn(iso) { return get().variants?.[iso] || null; }
+export function variantOn(iso) { return get().variants?.[iso] || (get().dayIntent?.[iso] === 'short' ? 'express' : null); }
+
+/** Jouw wens voor een dag: 'full' | 'short' | 'none' | null. */
+export function intentOn(iso) { return get().dayIntent?.[iso] || null; }
+
+/** Wens voor een dag zetten (null = terug naar automatisch). Ruimt oude handmatige keuzes op dezelfde dag op. */
+export function setIntent(iso, intent) {
+  update(st => {
+    if (intent) st.dayIntent[iso] = intent; else delete st.dayIntent[iso];
+    delete st.swaps[iso];
+    if (intent !== 'short' && st.variants[iso] === 'express') delete st.variants[iso];
+  });
+}
 
 /**
  * Voorstellen van de planner voor vandaag. Elk voorstel: {id, title, why, changes:[tekst], apply:[{iso, session?, variant?}]}.
@@ -449,7 +470,7 @@ export function proposals(iso, cache) {
   if (need > heavyPlanned) {
     const freeDay = rest.find(d => {
       const s = sched.find(x => x.iso === d);
-      return s && SESSIONS[s.sessionId]?.type !== 'heavy' && (minutesOn(d) >= 20 || plannedSummary(d).any) && !get().swaps[d];
+      return s && SESSIONS[s.sessionId]?.type !== 'heavy' && (minutesOn(d) >= 20 || plannedSummary(d).any) && !get().swaps[d] && !get().dayIntent?.[d];
     });
     if (freeDay) {
       catchupDay = freeDay;
@@ -482,7 +503,7 @@ export function proposals(iso, cache) {
   }
 
   // 3. Vandaag te weinig tijd voor de volledige sessie, maar er is wel een sessie nodig → express in plaats van snack
-  if (base?.type !== 'heavy' && need > 0 && minsToday >= 20 && minsToday < 40 && !get().swaps[iso] && !planToday.hard && catchupDay !== iso) {
+  if (base?.type !== 'heavy' && need > 0 && minsToday >= 20 && minsToday < 40 && !get().swaps[iso] && !get().dayIntent?.[iso] && !planToday.hard && catchupDay !== iso) {
     push({
       id: `express:${iso}:${candidate}`,
       title: `Vandaag ${minsToday} min — express in plaats van een snack?`,
