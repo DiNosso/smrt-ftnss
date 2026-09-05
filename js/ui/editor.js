@@ -4,7 +4,7 @@
 import { el, sheet, toast } from './common.js';
 import { get, S, update } from '../state.js';
 import { SESSIONS } from '../data/program.js';
-import { EXERCISES, byId, MUSCLE_NL } from '../data/exercises.js';
+import { EXERCISES, byId, MUSCLE_NL, isVisible } from '../data/exercises.js';
 
 const DEFAULTS = JSON.parse(JSON.stringify(SESSIONS)); // originele definities vastleggen bij load
 
@@ -97,7 +97,7 @@ export function openEditor(ctx) {
 function pickExercise(onPick) {
   const myEq = new Set(S().equipment);
   if (S().hasPullUpBar) myEq.add('pullUpBar');
-  const pool = EXERCISES.filter(e => e.equipment.every(q => myEq.has(q)));
+  const pool = EXERCISES.filter(e => isVisible(e) && e.equipment.every(q => myEq.has(q)));
   const searchIn = el('input', { placeholder: 'Zoek oefening…' });
   const listBox = el('div', { style: 'max-height:50dvh;overflow-y:auto' });
   const close = sheet(el('div', {}, el('h3', {}, 'Kies oefening'), searchIn, el('div', { class: 'mt' }, listBox)));

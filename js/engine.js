@@ -2,7 +2,7 @@
 // spierherstel, plateau-detectie, progressie en recomp-bewaking.
 
 import { SESSIONS, DELOAD, PROGRESSION } from './data/program.js';
-import { byId, EXERCISES } from './data/exercises.js';
+import { byId, EXERCISES, isVisible } from './data/exercises.js';
 import { get, S, update, todayISO, addDays } from './state.js';
 import * as icu from './icu.js';
 
@@ -56,6 +56,36 @@ export function mesoInfo(iso) {
 }
 
 export function isDeloadWeek(iso) { return mesoInfo(iso).isDeload; }
+
+// ---------- Blokrotatie van accessoires ----------
+// Elke mesocyclus (4 opbouwweken + deload = 5 weken) is een blok. Compounds blijven
+// staan; slots met `rot` wisselen per blok van oefening. Zo progresseer je 4 weken op
+// dezelfde oefening (nodig voor double progression) en is het menu daarna weer nieuw.
+
+export function blockIndex(iso = todayISO()) { return Math.floor((weekNumber(iso) - 1) / 5); }
+
+/** Slot met de oefening van dit blok. Notitie vervalt bij een gewisselde oefening (die hoort bij het origineel). */
+export function slotForBlock(slot, iso = todayISO()) {
+  if (!slot.rot?.length) return slot;
+  const cycle = [slot.ex, ...slot.rot];
+  const ex = cycle[blockIndex(iso) % cycle.length];
+  if (ex === slot.ex) return slot;
+  return { ...slot, ex, baseEx: slot.ex, note: null, rotated: true };
+}
+
+/** Overzicht van de rotatie: per sessie welke accessoires nu gelden en welke in het volgende blok. */
+export function rotationInfo(iso = todayISO()) {
+  const out = [];
+  const nextIso = addDays(iso, 7 * 5);
+  for (const sess of Object.values(SESSIONS).filter(x => x.type === 'heavy')) {
+    const rows = sess.slots.filter(sl => sl.rot?.length).map(sl => ({
+      now: byId[slotForBlock(sl, iso).ex]?.nameNL || sl.ex,
+      next: byId[slotForBlock(sl, nextIso).ex]?.nameNL || sl.ex,
+    }));
+    out.push({ session: sess, rows });
+  }
+  return { block: blockIndex(iso) + 1, sessions: out };
+}
 
 // ---------- Spierherstel uit logs ----------
 
@@ -392,6 +422,74 @@ export function plannedSession(iso) {
   return { session: SESSIONS[day.sessionId], reason: day.reason };
 }
 
+// ---------- Spierpijn: oefeningen vervangen ----------
+// Zeg je vooraf "spierpijn in benen/schouders", dan gaan oefeningen die die spier
+// primair belasten eruit en komt er een oefening voor een frisse spiergroep in de
+// plaats (volume blijft). Oefeningen waar de spier alleen meedoet blijven staan,
+// maar iets rustiger (1 rep verder van falen).
+
+const SORE_GROUPS = {
+  legs: ['quadriceps', 'hamstrings', 'glutes', 'calves'],
+  chest: ['chest'], back: ['back'], shoulders: ['shoulders'], arms: ['biceps', 'triceps', 'forearms'], core: ['core'],
+};
+export const SORE_NL = { legs: 'Benen', chest: 'Borst', back: 'Rug', shoulders: 'Schouders', arms: 'Armen', core: 'Core' };
+
+// Vervangers per weggevallen spiergroep: frisse spiergroepen, in volgorde van voorkeur.
+const SORE_SWAPS = {
+  quadriceps: ['chest_dumbbell_fly', 'back_bent_over_dumbbell_row', 'shoulders_incline_rear_delt_fly', 'core_v_up'],
+  hamstrings: ['back_bent_over_dumbbell_row', 'chest_dumbbell_fly', 'shoulders_incline_rear_delt_fly', 'core_hollow_hold'],
+  glutes: ['back_bent_over_dumbbell_row', 'chest_incline_dumbbell_fly', 'shoulders_y_raise', 'core_reverse_crunch'],
+  calves: ['core_v_up'],
+  shoulders: ['back_bent_over_dumbbell_row', 'biceps_zottman_curl', 'triceps_dumbbell_skull_crusher', 'core_v_up', 'glutes_single_leg_glute_bridge'],
+  chest: ['back_bent_over_dumbbell_row', 'triceps_dumbbell_skull_crusher', 'biceps_zottman_curl', 'hams_dumbbell_rdl'],
+  back: ['chest_dumbbell_fly', 'biceps_zottman_curl', 'triceps_dumbbell_skull_crusher', 'glutes_single_leg_glute_bridge'],
+  biceps: ['triceps_tate_press', 'shoulders_seated_lateral_raise', 'core_v_up'],
+  triceps: ['biceps_zottman_curl', 'shoulders_seated_lateral_raise', 'core_hollow_hold'],
+  forearms: ['core_v_up'],
+  core: ['shoulders_incline_rear_delt_fly', 'biceps_zottman_curl', 'glutes_single_leg_glute_bridge'],
+};
+
+export function soreMuscles(groups = []) {
+  return new Set(groups.flatMap(g => SORE_GROUPS[g] || []));
+}
+
+/**
+ * Pas uitgewerkte slots aan op spierpijn. Geeft {slots, changes:[tekst]} terug.
+ * groups: ['legs', 'shoulders', ...]
+ */
+export function adaptForSoreness(slots, groups = []) {
+  const sore = soreMuscles(groups);
+  if (!sore.size) return { slots, changes: [] };
+  const myEq = new Set(S().equipment || []);
+  const inSession = new Set(slots.map(sl => sl.ex));
+  const changes = [];
+  const out = slots.map(slot => {
+    const ex = slot.exercise || byId[slot.ex];
+    if (!ex) return slot;
+    if (sore.has(ex.muscle)) {
+      const cands = (SORE_SWAPS[ex.muscle] || []).map(id => byId[id])
+        .filter(c => c && isVisible(c) && !inSession.has(c.id) && !sore.has(c.muscle) && c.equipment.every(q => myEq.has(q)));
+      const alt = cands[0];
+      if (alt) {
+        inSession.add(alt.id);
+        changes.push(`${ex.nameNL} → ${alt.nameNL} (${MUSCLE_NL_SAFE(ex.muscle)} rust)`);
+        return { ...slot, ex: alt.id, exercise: alt, suggestion: suggestWeight(alt.id, slot.reps), ss: undefined, note: null, replaced: ex.nameNL };
+      }
+      changes.push(`${ex.nameNL} eruit (geen frisse vervanger)`);
+      return null;
+    }
+    if ((ex.secondary || []).some(m => sore.has(m))) {
+      changes.push(`${ex.nameNL}: iets rustiger (spier doet mee)`);
+      return { ...slot, rir: Math.min(5, slot.rir + 1), eased: true };
+    }
+    return slot;
+  }).filter(Boolean);
+  return { slots: out, changes };
+}
+function MUSCLE_NL_SAFE(m) {
+  return ({ chest: 'borst', back: 'rug', shoulders: 'schouders', biceps: 'biceps', triceps: 'triceps', quadriceps: 'quads', hamstrings: 'hamstrings', glutes: 'billen', core: 'core', calves: 'kuiten', forearms: 'onderarmen' })[m] || m;
+}
+
 // ---------- Varianten + planner-voorstellen ----------
 // Blokken die de planner kan inzetten als de situatie erom vraagt:
 //   express = alleen de compounds, ~30 min incl. warming-up (isolatie eruit)
@@ -476,14 +574,17 @@ export function proposals(iso, cache) {
       catchupDay = freeDay;
       const sport = plannedSummary(freeDay);
       const sportNm = sport.any ? sport.list.map(p => icu.TYPE_NL[p.type] || p.type).join(', ').toLowerCase() : null;
+      const express = sport.any || minutesOn(freeDay) < 40;
       push({
         id: `catchup:${freeDay}:${candidate}`,
         title: `Weekdoel in gevaar: nog ${need} sessie${need > 1 ? 's' : ''}, ${heavyPlanned} ingepland`,
         why: sportNm
           ? `${dayName(freeDay)} is een ${sportNm}-dag. Een express-sessie (~35 min, alleen de compounds) past daar prima naast: compounds houden de prikkel, isolatie laat je liggen.`
-          : `${dayName(freeDay)} heb je ${minutesOn(freeDay)} min. Genoeg voor een express-sessie: compounds heel, isolatie eruit.`,
-        changes: [`${dayName(freeDay)}: ${candName} · Express (~35 min)`],
-        apply: [{ iso: freeDay, session: candidate, variant: 'express' }],
+          : express
+            ? `${dayName(freeDay)} heb je ${minutesOn(freeDay)} min. Genoeg voor een express-sessie: compounds heel, isolatie eruit.`
+            : `${dayName(freeDay)} heb je ${minutesOn(freeDay)} min vrij. De planner had die dag overgeslagen voor herstel, maar een sessie erbij is beter dan het weekdoel missen.`,
+        changes: [`${dayName(freeDay)}: ${candName}${express ? ' · Express (~35 min)' : ' · volledig'}`],
+        apply: [{ iso: freeDay, session: candidate, variant: express ? 'express' : null }],
       });
     }
   }
@@ -755,7 +856,8 @@ export function readinessSignals(iso, cache) {
 
 /** Werk de sessie-slots uit incl. aanpassingen, tijdlimiet en gewichtssuggesties. */
 export function buildWorkout(session, adjust = { setFactor: 1, rirBonus: 0, restBonus: 0 }, timeCapMin = null) {
-  let built = session.slots.map(slot => {
+  let built = session.slots.map(s0 => {
+    const slot = slotForBlock(s0);
     const ex = byId[slot.ex];
     const sets = Math.max(1, Math.round(slot.sets * (adjust.setFactor ?? 1)));
     const rir = Math.min(5, slot.rir + (adjust.rirBonus ?? 0));
@@ -1513,7 +1615,7 @@ export function alternativesFor(exId, excludeIds = []) {
   const myEq = new Set(S().equipment);
   if (S().hasPullUpBar) myEq.add('pullUpBar');
   return EXERCISES
-    .filter(e => e.id !== exId && e.muscle === orig.muscle && !excludeIds.includes(e.id)
+    .filter(e => isVisible(e) && e.id !== exId && e.muscle === orig.muscle && !excludeIds.includes(e.id)
       && e.equipment.every(q => myEq.has(q)))
     .sort((a, b) => Math.abs((a.difficulty || 3) - (orig.difficulty || 3)) - Math.abs((b.difficulty || 3) - (orig.difficulty || 3)))
     .slice(0, 8);

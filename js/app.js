@@ -8,6 +8,7 @@ import { renderLibrary } from './ui/library.js';
 import { renderProgress } from './ui/progress.js';
 import { renderSettings } from './ui/settings.js';
 import { applyCustomData } from './engine.js';
+import * as sync from './sync.js';
 
 applyCustomData();
 
@@ -55,6 +56,7 @@ export function render() {
     tabbar.append(b);
   }
   app.innerHTML = '';
+  app.classList.add('cols'); // tablet: kaarten in twee kolommen (de speler zet dit weer uit)
   app.scrollTop = 0;
   window.scrollTo(0, 0);
   const tab = TABS.find(t => t.id === current);
@@ -67,6 +69,10 @@ addEventListener('hashchange', () => {
 });
 
 render();
+
+// Sync met je andere apparaat: ophalen bij openen/terugkomen, versturen na elke wijziging.
+// Tijdens een lopende workout niet hertekenen — de speler bewaart zelf zijn stand.
+sync.install(() => { if (!document.querySelector('.player-head')) render(); else toast('↻ Gesynchroniseerd met je andere apparaat'); });
 
 // Is de opslag opgeruimd en teruggezet? Dat moet je weten, want dan is er
 // mogelijk iets van de laatste sessie verloren.

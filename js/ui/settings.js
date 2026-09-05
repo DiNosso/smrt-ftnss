@@ -10,6 +10,7 @@ import { storageInfo } from '../backup.js';
 import { STORAGE_KEY } from '../state.js';
 import { SPORT_CHOICES } from '../engine.js';
 import { newPairCode } from '../tvsync.js';
+import * as sync from '../sync.js';
 import { parseStrongCsv, applyBaselines, scaleBaselines } from '../engine.js';
 
 const HOME_EQUIPMENT = ['dumbbells', 'bench', 'inclineBench', 'kettlebell', 'resistanceBands', 'abWheel', 'bodyweight'];
@@ -164,6 +165,7 @@ export function renderSettings(app, ctx) {
 
   // --- TV-scherm ---
   app.append(tvCard(ctx));
+  app.append(syncCard(ctx));
 
   // --- Vaste sportdagen ---
   app.append(el('div', { class: 'card' },
@@ -364,14 +366,87 @@ function tvCard(ctx) {
           const u = new URL('cast.html', location.href).toString() + '?code=' + code;
           navigator.clipboard?.writeText(u).then(() => toast('Laptop-link gekopieerd — bookmark hem daar')).catch(() => toast(u));
         } }, 'Kopieer laptop-link')),
-      explain('Hoe krijg ik dit op mijn tv?', el('div', {},
-        el('p', {}, el('b', {}, '1. Chromecast met Google TV of Google TV Streamer'), ' — de beste manier. Installeer daar een browser (TV Bro of Fully Kiosk) en open de tv-link. Eén keer de code invoeren en klaar; geen castsessie die kan verlopen.'),
-        el('p', {}, el('b', {}, '2. Vanaf je iPhone met URLCast'), ' — een gratis app die precies dit doet: een webpagina naar je Chromecast sturen, waarna je de app mag afsluiten. Let op: URLCast staat sinds 2025 niet meer in de Nederlandse App Store (de maker heeft de EU-handelaarsregistratie nooit gedaan). Met een gratis Amerikaans of Brits Apple-account is hij wel te installeren.'),
-        el('p', {}, el('b', {}, '3. Vanaf een laptop'), ' — open in Chrome:'),
-        el('p', { style: 'word-break:break-all;color:var(--primary)' }, new URL('cast.html', location.href).toString()),
-        el('p', {}, 'Vul de code in en cast één keer. Daarna mag de laptop dicht — je telefoon stuurt de tv rechtstreeks aan.'),
-        el('p', { class: 'mb0' }, el('b', {}, '4. Iets anders?'), ' Elke oude tablet, laptop of Raspberry Pi met een browser werkt ook. Zelfde tv-link, zelfde code.'))),
-      el('p', { class: 'tiny dim mb0' }, 'Casten vanuit een browser op je iPhone kan niet — Apple staat browsers geen toegang tot Chromecast-apparaten toe. Een native app zoals URLCast kan het wel.'));
+      explain('Hoe krijg ik dit op mijn tv? (stappenplan)', el('div', {},
+        el('p', {}, el('b', {}, 'Chromecast met Google TV (beneden) — 5 minuten, één keer'),
+          el('br'), '1. Op de tv: Apps → zoek ', el('b', {}, 'TV Bro'), ' (gratis browser) en installeer hem.',
+          el('br'), '2. Open TV Bro en typ de tv-link in (of gebruik de knop hierboven en typ hem over): ',
+          el('span', { style: 'word-break:break-all;color:var(--primary)' }, tvUrl),
+          el('br'), '3. Voer de koppelcode in. Zet in TV Bro de pagina als startpagina en gebruik "volledig scherm".',
+          el('br'), '4. Vanaf nu: tv aan → TV Bro → klaar. Je telefoon stuurt de oefening, reps en rusttimer live door zodra je een workout start.'),
+        el('p', {}, el('b', {}, 'Oude Chromecast (zolder, zonder apps)'), ' — die kan alleen ontvangen wat een ander apparaat stuurt, en iOS-browsers mogen niet casten. Enige route: open op een laptop in Chrome ',
+          el('span', { style: 'word-break:break-all;color:var(--primary)' }, new URL('cast.html', location.href).toString()),
+          ', vul de code in en cast één keer. Daarna mag de laptop dicht.'),
+        el('p', { class: 'mb0' }, el('b', {}, 'Waarom niet via de Google Home-app?'), ' Scherm spiegelen in Google Home bestaat alleen op Android. Op de iPhone toont de app alleen de afstandsbediening — precies wat je zag.'))));
+  };
+  teken();
+  return card;
+}
+
+
+/** Sync tussen iPad en iPhone via een eigen (gratis) Supabase-tabel. */
+function syncCard(ctx) {
+  const card = el('div', { class: 'card' });
+  let unsub = null;
+  const teken = () => {
+    card.innerHTML = '';
+    const st = S();
+    const status = el('div', { class: 'tiny mt', style: 'min-height:1.2em' });
+    const showStatus = (x) => {
+      if (!x || x.state === 'idle') { status.textContent = ''; return; }
+      status.style.color = x.state === 'error' ? 'var(--danger)' : x.state === 'busy' ? 'var(--text-dim)' : 'var(--accent)';
+      status.textContent = (x.state === 'error' ? '⚠ ' : x.state === 'ok' ? '✓ ' : '… ') + x.msg + (x.at && x.state === 'ok' ? ` · ${new Date(x.at).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}` : '');
+    };
+    unsub?.(); unsub = sync.onStatus(showStatus); showStatus(sync.getStatus());
+
+    card.append(
+      cardHead(ICO.bolt, 'Sync iPad ↔ iPhone'),
+      el('p', { class: 'tiny dim' }, 'Alles wat je op het ene apparaat doet staat op het andere: workouts, planning, instellingen, zelfs een lopende training. Via een eigen gratis Supabase-tabel; de sync-code is het geheim dat jouw rij afschermt.'));
+
+    const urlIn = el('input', { type: 'url', placeholder: 'https://xxxx.supabase.co', value: st.syncUrl || '', autocapitalize: 'off', autocorrect: 'off' });
+    const keyIn = el('input', { type: 'password', placeholder: 'anon / public key', value: st.syncKey || '', autocapitalize: 'off' });
+    const codeIn = el('input', { type: 'text', placeholder: 'sync-code (op beide apparaten dezelfde)', value: st.syncCode || '', autocapitalize: 'off', autocorrect: 'off', spellcheck: false });
+    const saveFields = () => update(x => { x.settings.syncUrl = urlIn.value.trim(); x.settings.syncKey = keyIn.value.trim(); x.settings.syncCode = codeIn.value.trim(); });
+    for (const i of [urlIn, keyIn, codeIn]) i.addEventListener('change', saveFields);
+
+    card.append(
+      el('label', {}, 'Supabase-URL'), urlIn,
+      el('label', {}, 'Anon key'), keyIn,
+      el('label', {}, 'Sync-code'),
+      el('div', { class: 'row' }, codeIn,
+        el('button', { class: 'btn-sm', onclick: () => { codeIn.value = sync.newSyncCode(); saveFields(); toast('Nieuwe code — zet dezelfde op je andere apparaat'); } }, 'Nieuw'),
+        el('button', { class: 'btn-sm', onclick: () => navigator.clipboard?.writeText(codeIn.value).then(() => toast('Code gekopieerd')) }, 'Kopieer')));
+
+    if (!st.syncEnabled) {
+      card.append(el('p', { class: 'tiny dim mt' }, 'Eerste keer inschakelen: kies welke kant de bron is.'),
+        el('div', { class: 'row' },
+          el('button', { class: 'btn-primary grow', onclick: async () => {
+            saveFields();
+            if (!S().syncUrl || !S().syncKey || !S().syncCode) return toast('Vul URL, key en code in');
+            try { update(x => { x.settings.syncEnabled = true; }); await sync.test(); await sync.enable('local'); toast('✓ Dit apparaat staat nu in de cloud'); teken(); }
+            catch (e) { update(x => { x.settings.syncEnabled = false; }); toast('⚠ ' + e.message); }
+          } }, 'Dit apparaat is de bron'),
+          el('button', { class: 'btn-secondary grow', onclick: async () => {
+            saveFields();
+            if (!S().syncUrl || !S().syncKey || !S().syncCode) return toast('Vul URL, key en code in');
+            if (!confirm('Alles op dit apparaat wordt vervangen door wat in de cloud staat (workouts worden samengevoegd). Doorgaan?')) return;
+            try { update(x => { x.settings.syncEnabled = true; }); await sync.test(); await sync.enable('cloud'); toast('✓ Opgehaald uit de cloud'); ctx.render(); }
+            catch (e) { update(x => { x.settings.syncEnabled = false; }); toast('⚠ ' + e.message); }
+          } }, 'Haal op uit de cloud')));
+    } else {
+      card.append(status,
+        el('div', { class: 'row mt' },
+          el('button', { class: 'btn-sm grow', onclick: async () => { const ch = await sync.pull(); if (ch) ctx.render(); else toast('Up-to-date'); } }, '↻ Nu synchroniseren'),
+          el('button', { class: 'btn-sm btn-ghost', style: 'color:var(--danger)', onclick: () => { update(x => { x.settings.syncEnabled = false; }); teken(); } }, 'Uit')));
+    }
+
+    card.append(explain('Supabase instellen (één keer, gratis)', el('div', {},
+      el('p', {}, '1. Maak een account op supabase.com en een nieuw project (gratis tier is ruim genoeg: dit is één rij van een paar honderd kB).'),
+      el('p', {}, '2. Open in het project ', el('b', {}, 'SQL Editor'), ' en voer dit uit:'),
+      el('pre', { style: 'white-space:pre-wrap;font-size:.7rem;background:var(--surface-2);padding:10px;border-radius:10px;user-select:all' }, sync.SQL),
+      el('button', { class: 'btn-sm', onclick: () => navigator.clipboard?.writeText(sync.SQL).then(() => toast('SQL gekopieerd')) }, 'Kopieer SQL'),
+      el('p', { class: 'mt' }, '3. Ga naar ', el('b', {}, 'Project Settings → API'), ': kopieer de Project URL en de anon/public key hierboven.'),
+      el('p', {}, '4. Tik op Nieuw voor een sync-code en kies "Dit apparaat is de bron".'),
+      el('p', { class: 'mb0' }, '5. Op je andere apparaat: dezelfde URL, key en code invullen en "Haal op uit de cloud" kiezen. Vanaf dan gaat het vanzelf: elke wijziging wordt binnen een paar seconden verstuurd en bij openen van de app opgehaald.'))));
   };
   teken();
   return card;

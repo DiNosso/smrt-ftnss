@@ -3,7 +3,7 @@
 
 import { el, videoBlock, demoBlock, visualBlock, fmtTime, toast, sheet, confetti, cardHead, explain, ICO } from './common.js';
 import { get, S, update, todayISO } from '../state.js';
-import { buildWorkout, recordProgress, detectPRs, warmupFor, alternativesFor, suggestWeight, nextWeight, stepDown, lastSetCue, calibrate, estimateFromKnown, isBodyweightOnly } from '../engine.js';
+import { buildWorkout, adaptForSoreness, recordProgress, detectPRs, warmupFor, alternativesFor, suggestWeight, nextWeight, stepDown, lastSetCue, calibrate, estimateFromKnown, isBodyweightOnly } from '../engine.js';
 import { byId, MUSCLE_NL } from '../data/exercises.js';
 import { WARMUP } from '../data/program.js';
 import { openTV } from './cast.js';
@@ -48,13 +48,19 @@ function beep() {
   navigator.vibrate?.([250, 100, 250, 100, 400]);
 }
 
-export function openWorkout(session, adjust, ctx, timeCap = null) {
+export function openWorkout(session, adjust, ctx, timeCap = null, opts = {}) {
   const app = document.getElementById('app');
   keepAwake();
   primeAudio();
 
   const startedAt = Date.now();
-  const slots = buildWorkout(session, adjust, timeCap);
+  const sore = opts.sore || get().activeWorkout?.sore || [];
+  let slots = buildWorkout(session, adjust, timeCap);
+  if (sore.length) {
+    const ad = adaptForSoreness(slots, sore);
+    const note = slots.trimmedNote;
+    slots = ad.slots; slots.trimmedNote = note; slots.soreChanges = ad.changes;
+  }
   // Tv-scherm: stuur de stand mee zolang de workout open staat.
   let tvLink = null;
   if (S().tvEnabled && S().tvPairCode) {
@@ -84,7 +90,7 @@ export function openWorkout(session, adjust, ctx, timeCap = null) {
     update(st => {
       st.activeWorkout = {
         sessionId: session.id, startedAt, savedAt: Date.now(),
-        adjust, timeCap,
+        adjust, timeCap, sore,
         sets: sets.map(x => ({ ex: x.ex, slotIdx: x.slotIdx, set: x.set, reps: x.reps, weight: x.weight, rir: x.rir, done: x.done })),
         slotEx: slots.map(sl => sl.ex),
       };
@@ -227,6 +233,7 @@ export function openWorkout(session, adjust, ctx, timeCap = null) {
 
   function renderAll() {
     app.innerHTML = '';
+    app.classList.remove('cols');
     pages = buildPages();
     pageIdx = Math.min(pageIdx, pages.length - 1);
 
@@ -357,13 +364,14 @@ export function openWorkout(session, adjust, ctx, timeCap = null) {
       const sug = slot.suggestion;
       lijst.append(el('div', { class: 'exrow', onclick: () => goTo(pageOf(si)) },
         el('div', { class: 'grow' },
-          el('div', {}, (slot.ss ? '⇉ ' : '') + (slot.exercise?.nameNL || slot.ex)),
+          el('div', {}, (slot.ss ? '⇉ ' : '') + (slot.exercise?.nameNL || slot.ex), slot.rotated ? el('span', { class: 'pill', style: 'margin-left:6px;font-size:.62rem' }, 'dit blok') : null),
           el('div', { class: 'mus' }, `${slot.sets}×${slot.reps[0]}-${slot.reps[1]} · RIR ${slot.rir}${sug.weight ? ` · ${sug.weight} kg${slot.exercise?.dumbbells === 2 ? '/stuk' : ''}` : ''}`),
           slot.note ? el('div', { class: 'tiny dim', style: 'margin-top:2px;white-space:normal' }, slot.note) : null),
         el('span', { class: 'dim' }, '›')));
     });
     card.append(lijst);
     if (slots.trimmedNote) card.append(el('div', { class: 'tiny mt', style: 'color:var(--warn)' }, '⏱ ' + slots.trimmedNote));
+    if (slots.soreChanges?.length) card.append(el('div', { class: 'tiny mt', style: 'color:var(--warn)' }, '🩹 Spierpijn: ' + slots.soreChanges.join(' · ')));
     card.append(el('button', { class: 'btn-primary btn-block mt', onclick: () => goTo(1) },
       session.type !== 'snack' ? '▶ Start warming-up' : '▶ Start'));
     return card;
@@ -509,23 +517,28 @@ export function openWorkout(session, adjust, ctx, timeCap = null) {
       el('h3', { class: 'mb0', style: 'font-size:1.2rem' }, ex?.nameNL || slot.ex),
       el('div', { class: 'row', style: 'gap:6px' },
         ss ? el('span', { class: 'pill on' }, pos === 0 ? 'A' : 'B') : null,
+        slot.replaced ? el('span', { class: 'pill warn' }, `i.p.v. ${slot.replaced}`) : null,
+        slot.eased ? el('span', { class: 'pill warn' }, 'rustiger') : null,
         el('span', { class: 'pill', style: 'cursor:pointer', onclick: openRirHelp }, `doel: ${slot.rir} over`))));
     block.append(el('div', { class: 'tiny dim', style: 'margin:4px 0 10px' },
       `${slot.sets} × ${slot.reps[0]}-${slot.reps[1]} reps · rust ${fmtTime(slot.rest)}${ss ? (pos === 0 ? ' · direct door naar B' : ' · daarna rust') : ''}`));
 
-    // beeld: vierkant, bij een superset iets kleiner zodat beide passen
+    // beeld links (tablet) / boven (telefoon), invoer rechts / onder
     const demo = visualBlock(ex, { maxVh: ss ? 0.3 : 0.42 });
-    if (demo) block.append(demo);
+    const media = el('div', { class: 'exmedia' }, demo);
+    const form = el('div', { class: 'exform' });
+    block.append(el('div', { class: 'exbody' }, media, form));
+    const target = form; // alles hieronder komt in het formulier-deel
 
     // gewichtsadvies (het enige wat je tijdens de set nodig hebt)
-    block.append(el('div', { class: 'mt', style: 'font-weight:600;color:var(--primary);font-size:.92rem' },
+    target.append(el('div', { class: 'mt', style: 'font-weight:600;color:var(--primary);font-size:.92rem' },
       (slot.suggestion.big ? '⏫ ' : slot.suggestion.isUp ? '↗ ' : slot.suggestion.isDown ? '↘ ' : '↳ ') + slot.suggestion.text
         + (slot.exercise?.dumbbells === 2 && slot.suggestion.weight ? ' (per dumbbell)' : '')));
     if (slot.suggestion.isNew && !slot.suggestion.weight) {
       const est = estimateFromKnown(slot.ex);
-      if (est) block.append(el('div', { class: 'tiny', style: 'margin-top:3px;color:var(--primary)' },
+      if (est) target.append(el('div', { class: 'tiny', style: 'margin-top:3px;color:var(--primary)' },
         `Schatting op basis van je ${est.from}: ± ${est.weight} kg`));
-      block.append(el('button', { class: 'btn-sm mt', onclick: () => openCalibrate(slot, est, (kg) => {
+      target.append(el('button', { class: 'btn-sm mt', onclick: () => openCalibrate(slot, est, (kg) => {
         slots[si] = { ...slot, suggestion: { ...slot.suggestion, weight: kg, isNew: false,
           text: `${kg} kg — bepaald met een testset`, why: 'Vanaf nu stuurt je RIR het gewicht.' } };
         for (const st of sets) if (st.slotIdx === si && !st.done) st.weight = kg;
@@ -537,12 +550,12 @@ export function openWorkout(session, adjust, ctx, timeCap = null) {
     const mySets = sets.filter(s => s.slotIdx === si);
     const slotRows = [];
     const hintEl = el('div', { class: 'tiny mt', style: 'color:var(--warn);display:none' });
-    block.append(el('div', { class: 'mt tiny dim', style: 'display:grid;grid-template-columns:40px 1fr 1fr 54px 46px;gap:7px;text-align:center' },
+    target.append(el('div', { class: 'mt tiny dim', style: 'display:grid;grid-template-columns:40px 1fr 1fr 54px 46px;gap:7px;text-align:center' },
       el('span', {}), el('span', {}, slot.exercise?.dumbbells === 2 ? 'kg/stuk' : 'kg'), el('span', {}, 'reps'), el('span', {}, 'over'), el('span', {})));
-    block.append(el('div', {}, mySets.map(s => setRow(s, slot, si, slotRows, hintEl))), hintEl);
+    target.append(el('div', {}, mySets.map(s => setRow(s, slot, si, slotRows, hintEl))), hintEl);
 
     // alles wat je vooraf leest, niet tijdens de set: cue, notitie, uitvoering, wisselen
-    block.append(explain('Uitvoering & opties',
+    target.append(explain('Uitvoering & opties',
       el('div', { class: 'tiny', style: 'color:var(--warn)' }, '🎯 ' + lastSetCue(slot)),
       slot.suggestion.why ? el('div', { class: 'tiny dim mt' }, slot.suggestion.why) : null,
       slot.note ? el('p', { class: 'tiny dim mt mb0' }, slot.note) : null,

@@ -1,7 +1,7 @@
 // Oefeningenbibliotheek met filters en video's
 
 import { el, videoBlock, demoBlock, visualBlock, sheet, toast } from './common.js';
-import { EXERCISES, MUSCLE_NL, EQUIPMENT_NL, byId } from '../data/exercises.js';
+import { EXERCISES, MUSCLE_NL, EQUIPMENT_NL, byId, isVisible } from '../data/exercises.js';
 import { get, S, update } from '../state.js';
 import { exerciseHistory } from '../engine.js';
 import { openExerciseProgress } from './progress.js';
@@ -17,7 +17,7 @@ export function renderLibrary(app) {
       el('button', { class: 'btn-sm', onclick: () => openNewExercise(draw) }, '+ Eigen oefening')));
 
     // filters
-    const muscles = [...new Set(EXERCISES.map(e => e.muscle))];
+    const muscles = [...new Set(EXERCISES.filter(isVisible).map(e => e.muscle))];
     const bar = el('div', { class: 'filterbar' },
       el('span', { class: 'pill' + (activeMuscle === null ? ' on' : ''), onclick: () => { activeMuscle = null; draw(); } }, 'Alles'),
       muscles.map(m => el('span', { class: 'pill' + (activeMuscle === m ? ' on' : ''), onclick: () => { activeMuscle = m; draw(); } }, MUSCLE_NL[m] || m)));
@@ -32,6 +32,7 @@ export function renderLibrary(app) {
     if (S().hasPullUpBar) myEq.add('pullUpBar');
 
     const list = EXERCISES.filter(e => {
+      if (!isVisible(e)) return false;
       if (activeMuscle && e.muscle !== activeMuscle) return false;
       if (onlyMyEquipment && !e.equipment.every(q => myEq.has(q))) return false;
       return true;

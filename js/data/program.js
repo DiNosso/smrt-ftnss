@@ -7,7 +7,9 @@
 // Progressie: double progression (reps omhoog binnen range, dan gewicht +stap).
 // Deload: elke 5e week, volume x0.6 en RIR 4.
 
-// slot: {ex: exerciseId, sets, reps: [min,max], rir, rest (sec), note?, superset? }
+// slot: {ex: exerciseId, sets, reps: [min,max], rir, rest (sec), note?, ss?, rot? }
+// rot = accessoire-rotatie per mesocyclus: blok 1 = ex, blok 2 = rot[0], blok 3 = rot[1], dan weer ex.
+// Compounds (bank, row A, press) blijven vast — daar bouw je op; accessoires wisselen voor variatie zonder progressie te verliezen.
 export const SESSIONS = {
   sessionA: {
     id: 'sessionA',
@@ -21,12 +23,12 @@ export const SESSIONS = {
     slots: [
       { ex: 'chest_dumbbell_bench_press', sets: 4, reps: [8, 12], rir: 1, rest: 75, ss: 'ab1', note: 'Hoofdlift. Superset met de row: terwijl je borst werkt, rust je rug.' },
       { ex: 'back_dumbbell_row', sets: 4, reps: [10, 12], rir: 1, rest: 75, ss: 'ab1', note: 'Per arm. Trek met je elleboog, niet met je hand.' },
-      { ex: 'hams_stiff_leg_deadlift', sets: 3, reps: [10, 15], rir: 2, rest: 120, note: 'Heupscharnier — het enige beenwerk dat fietsen níét dekt. Rug recht, rek in de hamstrings.' },
+      { ex: 'hams_stiff_leg_deadlift', sets: 3, reps: [10, 15], rir: 2, rest: 120, note: 'Heupscharnier — het enige beenwerk dat fietsen níét dekt. Rug recht, rek in de hamstrings.', rot: ['hams_dumbbell_rdl', 'glutes_dumbbell_sumo_deadlift'] },
       { ex: 'shoulders_dumbbell_press', sets: 2, reps: [8, 12], rir: 1, rest: 60, ss: 'ab2', note: 'Zittend met rugsteun.' },
-      { ex: 'biceps_hammer_curl', sets: 2, reps: [10, 15], rir: 0, rest: 60, ss: 'ab2', note: 'Neutrale greep. Laatste set tot spierfalen — je RIR-ijkpunt.' },
-      { ex: 'shoulders_lateral_raise', sets: 2, reps: [12, 20], rir: 0, rest: 45, ss: 'ab3', note: 'Licht gewicht, tot spierfalen.' },
-      { ex: 'triceps_overhead_extension', sets: 2, reps: [10, 15], rir: 0, rest: 45, ss: 'ab3', note: 'Volledige rek boven je hoofd.' },
-      { ex: 'core_ab_wheel', sets: 2, reps: [6, 12], rir: 2, rest: 60, note: 'Vanaf de knieën. Rug mag niet doorzakken.' },
+      { ex: 'biceps_hammer_curl', sets: 2, reps: [10, 15], rir: 0, rest: 60, ss: 'ab2', note: 'Neutrale greep. Laatste set tot spierfalen — je RIR-ijkpunt.', rot: ['biceps_zottman_curl', 'biceps_cross_body_hammer_curl'] },
+      { ex: 'shoulders_lateral_raise', sets: 2, reps: [12, 20], rir: 0, rest: 45, ss: 'ab3', note: 'Licht gewicht, tot spierfalen.', rot: ['shoulders_seated_lateral_raise', 'shoulders_y_raise'] },
+      { ex: 'triceps_overhead_extension', sets: 2, reps: [10, 15], rir: 0, rest: 45, ss: 'ab3', note: 'Volledige rek boven je hoofd.', rot: ['triceps_dumbbell_skull_crusher', 'triceps_single_arm_overhead_extension'] },
+      { ex: 'core_ab_wheel', sets: 2, reps: [6, 12], rir: 2, rest: 60, note: 'Vanaf de knieën. Rug mag niet doorzakken.', rot: ['core_v_up', 'core_hollow_hold'] },
     ],
   },
   sessionB: {
@@ -40,13 +42,13 @@ export const SESSIONS = {
     warmup: null,
     slots: [
       { ex: 'chest_incline_dumbbell_press', sets: 4, reps: [8, 12], rir: 1, rest: 75, ss: 'ab4', note: 'Bank op 30°. Superset met de row.' },
-      { ex: 'back_dumbbell_row', sets: 4, reps: [12, 15], rir: 1, rest: 75, ss: 'ab4', note: 'Hoger repbereik dan in sessie A.' },
-      { ex: 'glutes_single_leg_hip_thrust', sets: 3, reps: [10, 15], rir: 2, rest: 90, note: 'Billen en hamstrings — de achterkant die fietsen laat liggen. Knijp bovenin aan.' },
+      { ex: 'back_dumbbell_row', sets: 4, reps: [12, 15], rir: 1, rest: 75, ss: 'ab4', note: 'Hoger repbereik dan in sessie A.' , rot: ['back_bent_over_dumbbell_row', 'back_gorilla_row'] },
+      { ex: 'glutes_single_leg_hip_thrust', sets: 3, reps: [10, 15], rir: 2, rest: 90, note: 'Billen en hamstrings — de achterkant die fietsen laat liggen. Knijp bovenin aan.', rot: ['glutes_single_leg_glute_bridge', 'hams_dumbbell_rdl'] },
       { ex: 'shoulders_arnold_press', sets: 2, reps: [8, 12], rir: 1, rest: 60, ss: 'ab5', note: 'Draai de dumbbells tijdens het drukken.' },
-      { ex: 'biceps_incline_curl', sets: 2, reps: [8, 12], rir: 1, rest: 60, ss: 'ab5', note: 'Op de schuine bank, armen achter je lichaam voor extra rek.' },
-      { ex: 'back_band_pull_apart', sets: 2, reps: [15, 20], rir: 1, rest: 45, ss: 'ab6', note: 'Achterkant schouders — houdt je schouders gezond bij al dat drukwerk.' },
-      { ex: 'triceps_kickback', sets: 2, reps: [12, 20], rir: 0, rest: 45, ss: 'ab6', note: 'Elleboog hoog en stil, alleen de onderarm beweegt.' },
-      { ex: 'core_lying_leg_raise', sets: 2, reps: [10, 15], rir: 1, rest: 60, note: 'Onderrug tegen de vloer houden.' },
+      { ex: 'biceps_incline_curl', sets: 2, reps: [8, 12], rir: 1, rest: 60, ss: 'ab5', note: 'Op de schuine bank, armen achter je lichaam voor extra rek.', rot: ['biceps_spider_curl', 'biceps_waiter_curl'] },
+      { ex: 'back_band_pull_apart', sets: 2, reps: [15, 20], rir: 1, rest: 45, ss: 'ab6', note: 'Achterkant schouders — houdt je schouders gezond bij al dat drukwerk.', rot: ['back_band_w_raise', 'shoulders_incline_rear_delt_fly'] },
+      { ex: 'triceps_kickback', sets: 2, reps: [12, 20], rir: 0, rest: 45, ss: 'ab6', note: 'Elleboog hoog en stil, alleen de onderarm beweegt.', rot: ['triceps_tate_press', 'triceps_band_overhead_extension'] },
+      { ex: 'core_lying_leg_raise', sets: 2, reps: [10, 15], rir: 1, rest: 60, note: 'Onderrug tegen de vloer houden.', rot: ['core_scissor_kick', 'core_toe_touch_crunch'] },
     ],
   },
   snackCore: {

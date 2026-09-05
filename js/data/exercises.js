@@ -85,6 +85,7 @@ export const EXERCISES = [
  },
  {
   "id": "chest_dumbbell_fly",
+  "clip": true,
   "dumbbells": 2,
   "name": "Dumbbell Fly",
   "nameNL": "Dumbbell Fly",
@@ -520,6 +521,7 @@ export const EXERCISES = [
  },
  {
   "id": "shoulders_reverse_fly",
+  "clip": true,
   "dumbbells": 2,
   "name": "Reverse Fly",
   "nameNL": "Reverse Fly",
@@ -1194,6 +1196,7 @@ export const EXERCISES = [
  },
  {
   "id": "hams_single_leg_rdl",
+  "clip": true,
   "name": "Single Leg Romanian Deadlift",
   "nameNL": "Eenbenige Romanian Deadlift",
   "muscle": "hamstrings",
@@ -1332,6 +1335,7 @@ export const EXERCISES = [
  },
  {
   "id": "glutes_donkey_kickback",
+  "clip": true,
   "name": "Donkey Kickback",
   "nameNL": "Donkey Kickback",
   "muscle": "glutes",
@@ -1450,6 +1454,7 @@ export const EXERCISES = [
  },
  {
   "id": "core_mountain_climber",
+  "clip": true,
   "name": "Mountain Climbers",
   "nameNL": "Mountain Climbers",
   "muscle": "core",
@@ -1487,6 +1492,7 @@ export const EXERCISES = [
  },
  {
   "id": "core_bicycle_crunch",
+  "clip": true,
   "name": "Bicycle Crunch",
   "nameNL": "Bicycle Crunch",
   "muscle": "core",
@@ -2050,6 +2056,1184 @@ export const EXERCISES = [
   "recoveryHours": 0,
   "demo": true,
   "clip": true
+ },
+ {
+   "id": "chest_incline_dumbbell_fly",
+   "dumbbells": 2,
+   "name": "Incline Dumbbell Fly",
+   "nameNL": "Schuine Dumbbell Fly",
+   "muscle": "chest",
+   "secondary": [
+     "shoulders"
+   ],
+   "equipment": [
+     "dumbbells",
+     "inclineBench"
+   ],
+   "difficulty": 2,
+   "instructions": "Bank op 30°. Armen licht gebogen wijd openen tot je rek voelt op je bovenborst, dan als een boog weer sluiten. Licht gewicht, grote beweging.",
+   "recoveryHours": 48,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "chest_glute_bridge_press",
+   "dumbbells": 2,
+   "name": "Glute Bridge Chest Press",
+   "nameNL": "Vloerpress in brughouding",
+   "muscle": "chest",
+   "secondary": [
+     "glutes",
+     "triceps"
+   ],
+   "equipment": [
+     "dumbbells"
+   ],
+   "difficulty": 2,
+   "instructions": "Lig op de vloer, heupen omhoog in een brug. Druk de dumbbells recht omhoog en laat ze zakken tot je ellebogen de vloer raken. Kort onderin, dan weer op.",
+   "recoveryHours": 48,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "chest_decline_push_up",
+   "name": "Decline Push-Up",
+   "nameNL": "Decline Push-up",
+   "muscle": "chest",
+   "secondary": [
+     "shoulders",
+     "triceps"
+   ],
+   "equipment": [
+     "bodyweight",
+     "bench"
+   ],
+   "difficulty": 3,
+   "instructions": "Voeten op de bank, handen op de vloer. Meer op de bovenborst en schouders. Lichaam als één plank, borst tot net boven de vloer.",
+   "recoveryHours": 36,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "chest_incline_push_up",
+   "name": "Incline Push-Up",
+   "nameNL": "Incline Push-up",
+   "muscle": "chest",
+   "secondary": [
+     "shoulders",
+     "triceps"
+   ],
+   "equipment": [
+     "bodyweight",
+     "bench"
+   ],
+   "difficulty": 1,
+   "instructions": "Handen op de bank, voeten op de vloer. Makkelijker dan een gewone push-up — ideaal als opbouw of als je borst al moe is.",
+   "recoveryHours": 24,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "chest_archer_push_up",
+   "name": "Archer Push-Up",
+   "nameNL": "Archer Push-up",
+   "muscle": "chest",
+   "secondary": [
+     "shoulders",
+     "triceps"
+   ],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 4,
+   "instructions": "Handen wijd. Zak schuin naar één hand toe terwijl de andere arm gestrekt blijft. Wissel per rep. Bijna een eenarmige push-up.",
+   "recoveryHours": 48,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "chest_wide_push_up",
+   "name": "Wide Push-Up",
+   "nameNL": "Brede Push-up",
+   "muscle": "chest",
+   "secondary": [
+     "shoulders"
+   ],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 2,
+   "instructions": "Handen ruim buiten schouderbreedte. Meer borst, minder triceps. Ellebogen niet helemaal naar buiten laten wijzen — 45 graden.",
+   "recoveryHours": 36,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "chest_band_chest_press",
+   "name": "Band Chest Press",
+   "nameNL": "Band Chest Press",
+   "muscle": "chest",
+   "secondary": [
+     "triceps",
+     "shoulders"
+   ],
+   "equipment": [
+     "resistanceBands"
+   ],
+   "difficulty": 1,
+   "instructions": "Band achter je rug, uiteinden in je handen. Druk naar voren tot je armen gestrekt zijn, langzaam terug. Zittend of staand.",
+   "recoveryHours": 24,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "back_renegade_row",
+   "name": "Renegade Row",
+   "nameNL": "Renegade Row",
+   "muscle": "back",
+   "secondary": [
+     "core",
+     "shoulders"
+   ],
+   "equipment": [
+     "dumbbells"
+   ],
+   "difficulty": 4,
+   "instructions": "Plank op twee dumbbells. Trek er één naar je heup zonder dat je heupen draaien. Wissel. Core werkt even hard als je rug.",
+   "recoveryHours": 48,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "back_gorilla_row",
+   "name": "Gorilla Row",
+   "nameNL": "Gorilla Row",
+   "muscle": "back",
+   "secondary": [
+     "biceps",
+     "core"
+   ],
+   "equipment": [
+     "dumbbells"
+   ],
+   "difficulty": 3,
+   "instructions": "Breed staan, dumbbells op de vloer tussen je voeten. Rug plat, trek er om en om één naar je heup terwijl de andere op de vloer blijft.",
+   "recoveryHours": 36,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "back_bent_over_dumbbell_row",
+   "dumbbells": 2,
+   "name": "Bent-Over Dumbbell Row",
+   "nameNL": "Voorovergebogen Dumbbell Row (beide armen)",
+   "muscle": "back",
+   "secondary": [
+     "biceps"
+   ],
+   "equipment": [
+     "dumbbells"
+   ],
+   "difficulty": 2,
+   "instructions": "Heupscharnier tot je romp bijna horizontaal is. Trek beide dumbbells tegelijk naar je heupen, ellebogen langs je lichaam. Rug blijft plat.",
+   "recoveryHours": 36,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "back_band_lat_pulldown",
+   "name": "Band Lat Pulldown",
+   "nameNL": "Band Lat Pulldown",
+   "muscle": "back",
+   "secondary": [
+     "biceps"
+   ],
+   "equipment": [
+     "resistanceBands"
+   ],
+   "difficulty": 1,
+   "instructions": "Band boven je hoofd, handen wijd. Trek de ellebogen naar beneden en naar je zij, knijp je schouderbladen samen.",
+   "recoveryHours": 24,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "back_band_seated_row",
+   "name": "Band Seated Row",
+   "nameNL": "Zittende Band Row",
+   "muscle": "back",
+   "secondary": [
+     "biceps"
+   ],
+   "equipment": [
+     "resistanceBands"
+   ],
+   "difficulty": 1,
+   "instructions": "Zit met gestrekte benen, band om je voeten. Trek naar je buik, ellebogen langs het lichaam, borst vooruit.",
+   "recoveryHours": 24,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "back_superman",
+   "name": "Superman Hold",
+   "nameNL": "Superman",
+   "muscle": "back",
+   "secondary": [
+     "glutes"
+   ],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 1,
+   "instructions": "Op je buik, armen en benen gestrekt van de vloer. Houd vast, kijk naar de mat. Sterke onderrug voor je deadlift.",
+   "recoveryHours": 24,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "back_band_w_raise",
+   "name": "Band W-Raise",
+   "nameNL": "Band W-Raise",
+   "muscle": "shoulders",
+   "secondary": [
+     "back"
+   ],
+   "equipment": [
+     "resistanceBands"
+   ],
+   "difficulty": 1,
+   "instructions": "Band voor je borst, ellebogen 90°. Trek de handen naar buiten en omhoog tot je armen een W vormen. Achterkant schouders en rotatoren.",
+   "recoveryHours": 24,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "shoulders_incline_rear_delt_fly",
+   "dumbbells": 2,
+   "name": "Incline Rear Delt Fly",
+   "nameNL": "Rear Delt Fly op schuine bank",
+   "muscle": "shoulders",
+   "secondary": [
+     "back"
+   ],
+   "equipment": [
+     "dumbbells",
+     "inclineBench"
+   ],
+   "difficulty": 2,
+   "instructions": "Buik op de schuine bank. Til de dumbbells zijwaarts tot schouderhoogte, licht gebogen armen. Geen zwaai — de bank dwingt je eerlijk te zijn.",
+   "recoveryHours": 36,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "shoulders_dumbbell_upright_row",
+   "dumbbells": 2,
+   "name": "Dumbbell Upright Row",
+   "nameNL": "Dumbbell Upright Row",
+   "muscle": "shoulders",
+   "secondary": [
+     "back"
+   ],
+   "equipment": [
+     "dumbbells"
+   ],
+   "difficulty": 2,
+   "instructions": "Dumbbells voor je dijen. Trek langs je lichaam omhoog tot borsthoogte, ellebogen hoger dan handen. Niet hoger dan comfortabel voor je schouders.",
+   "recoveryHours": 36,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "shoulders_y_raise",
+   "dumbbells": 2,
+   "name": "Dumbbell Y-Raise",
+   "nameNL": "Dumbbell Y-Raise",
+   "muscle": "shoulders",
+   "secondary": [
+     "back"
+   ],
+   "equipment": [
+     "dumbbells",
+     "inclineBench"
+   ],
+   "difficulty": 2,
+   "instructions": "Buik op de schuine bank, lichte dumbbells. Til de armen schuin omhoog in een Y. Onderste trapezius en achterkant schouders — goed voor je houding.",
+   "recoveryHours": 36,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "shoulders_seated_lateral_raise",
+   "dumbbells": 2,
+   "name": "Seated Lateral Raise",
+   "nameNL": "Zittende Lateral Raise",
+   "muscle": "shoulders",
+   "secondary": [],
+   "equipment": [
+     "dumbbells",
+     "bench"
+   ],
+   "difficulty": 1,
+   "instructions": "Zittend op de bank kun je niet meezwaaien met je benen. Til zijwaarts tot schouderhoogte, pinken iets omhoog, langzaam terug.",
+   "recoveryHours": 36,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "shoulders_band_lateral_raise",
+   "name": "Band Lateral Raise",
+   "nameNL": "Band Lateral Raise",
+   "muscle": "shoulders",
+   "secondary": [],
+   "equipment": [
+     "resistanceBands"
+   ],
+   "difficulty": 1,
+   "instructions": "Sta op de band, uiteinden in je handen. Til zijwaarts tot schouderhoogte. De weerstand neemt bovenin toe — precies waar de zijkant van je schouder werkt.",
+   "recoveryHours": 24,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "shoulders_band_overhead_press",
+   "name": "Band Overhead Press",
+   "nameNL": "Band Overhead Press",
+   "muscle": "shoulders",
+   "secondary": [
+     "triceps"
+   ],
+   "equipment": [
+     "resistanceBands"
+   ],
+   "difficulty": 1,
+   "instructions": "Sta op de band, handen op schouderhoogte. Druk recht omhoog, ribben laag, langzaam terug.",
+   "recoveryHours": 24,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "shoulders_kettlebell_press",
+   "name": "Kettlebell Press",
+   "nameNL": "Kettlebell Press",
+   "muscle": "shoulders",
+   "secondary": [
+     "triceps",
+     "core"
+   ],
+   "equipment": [
+     "kettlebell"
+   ],
+   "difficulty": 2,
+   "instructions": "Kettlebell in rack-positie tegen je onderarm. Druk recht omhoog, elleboog uitdraaien. Eén arm tegelijk — je core houdt je recht.",
+   "recoveryHours": 36,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "shoulders_pike_push_up",
+   "name": "Pike Push-Up",
+   "nameNL": "Pike Push-up",
+   "muscle": "shoulders",
+   "secondary": [
+     "triceps"
+   ],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 3,
+   "instructions": "Heupen hoog in een omgekeerde V. Laat je hoofd tussen je handen zakken en druk omhoog. De lichaamsgewicht-versie van de shoulder press.",
+   "recoveryHours": 36,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "shoulders_dumbbell_shrug",
+   "dumbbells": 2,
+   "name": "Dumbbell Shrug",
+   "nameNL": "Dumbbell Shrug",
+   "muscle": "shoulders",
+   "secondary": [
+     "back"
+   ],
+   "equipment": [
+     "dumbbells"
+   ],
+   "difficulty": 1,
+   "instructions": "Dumbbells langs je lichaam. Trek je schouders recht omhoog naar je oren, knijp, en laat langzaam zakken. Niet rollen.",
+   "recoveryHours": 36,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "biceps_zottman_curl",
+   "dumbbells": 2,
+   "name": "Zottman Curl",
+   "nameNL": "Zottman Curl",
+   "muscle": "biceps",
+   "secondary": [
+     "forearms"
+   ],
+   "equipment": [
+     "dumbbells"
+   ],
+   "difficulty": 2,
+   "instructions": "Curl omhoog met handpalmen naar boven, draai bovenin je handen om en laat zakken met de palmen naar beneden. Biceps én onderarmen.",
+   "recoveryHours": 36,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "biceps_waiter_curl",
+   "name": "Waiter Curl",
+   "nameNL": "Waiter Curl",
+   "muscle": "biceps",
+   "secondary": [],
+   "equipment": [
+     "dumbbells"
+   ],
+   "difficulty": 2,
+   "instructions": "Houd één dumbbell als een dienblad: handpalmen onder de kop. Curl omhoog en houd de dumbbell verticaal. Veel piek-spanning.",
+   "recoveryHours": 36,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "biceps_cross_body_hammer_curl",
+   "dumbbells": 2,
+   "name": "Cross-Body Hammer Curl",
+   "nameNL": "Cross-body Hammer Curl",
+   "muscle": "biceps",
+   "secondary": [
+     "forearms"
+   ],
+   "equipment": [
+     "dumbbells"
+   ],
+   "difficulty": 1,
+   "instructions": "Neutrale grip, curl de dumbbell schuin naar je tegenoverliggende schouder. Om en om. Brachialis en onderarm.",
+   "recoveryHours": 36,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "biceps_alternating_curl",
+   "dumbbells": 2,
+   "name": "Alternating Dumbbell Curl",
+   "nameNL": "Alternerende Dumbbell Curl",
+   "muscle": "biceps",
+   "secondary": [],
+   "equipment": [
+     "dumbbells"
+   ],
+   "difficulty": 1,
+   "instructions": "Om en om curlen, met supinatie: draai je pink naar buiten terwijl je omhoog komt. Ellebogen blijven stil langs je lichaam.",
+   "recoveryHours": 36,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "triceps_dumbbell_skull_crusher",
+   "dumbbells": 2,
+   "name": "Dumbbell Skull Crusher",
+   "nameNL": "Dumbbell Skull Crusher",
+   "muscle": "triceps",
+   "secondary": [],
+   "equipment": [
+     "dumbbells",
+     "bench"
+   ],
+   "difficulty": 2,
+   "instructions": "Lig op de bank, dumbbells boven je. Buig alleen de ellebogen en laat de dumbbells naast je hoofd zakken, dan strekken. Ellebogen wijzen omhoog.",
+   "recoveryHours": 36,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "triceps_tate_press",
+   "dumbbells": 2,
+   "name": "Tate Press",
+   "nameNL": "Tate Press",
+   "muscle": "triceps",
+   "secondary": [],
+   "equipment": [
+     "dumbbells",
+     "bench"
+   ],
+   "difficulty": 3,
+   "instructions": "Lig op de bank, dumbbells boven je borst met de handpalmen vooruit. Laat de dumbbells naar binnen zakken tot ze je borst raken, ellebogen wijzen naar buiten, en druk weer op.",
+   "recoveryHours": 36,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "triceps_single_arm_overhead_extension",
+   "name": "Single-Arm Overhead Extension",
+   "nameNL": "Eenarmige Overhead Extension",
+   "muscle": "triceps",
+   "secondary": [],
+   "equipment": [
+     "dumbbells"
+   ],
+   "difficulty": 2,
+   "instructions": "Eén dumbbell boven je hoofd. Laat achter je hoofd zakken door alleen de elleboog te buigen, strek weer. Volle rek, andere hand steunt de elleboog.",
+   "recoveryHours": 36,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "triceps_band_overhead_extension",
+   "name": "Band Overhead Extension",
+   "nameNL": "Band Overhead Extension",
+   "muscle": "triceps",
+   "secondary": [],
+   "equipment": [
+     "resistanceBands"
+   ],
+   "difficulty": 1,
+   "instructions": "Kniel op de band, uiteinde achter je hoofd. Strek de armen boven je hoofd, langzaam terug. Prima als lichte finisher.",
+   "recoveryHours": 24,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "triceps_bench_dip",
+   "name": "Bench Dip",
+   "nameNL": "Bench Dip",
+   "muscle": "triceps",
+   "secondary": [
+     "chest",
+     "shoulders"
+   ],
+   "equipment": [
+     "bodyweight",
+     "bench"
+   ],
+   "difficulty": 2,
+   "instructions": "Handen op de rand van de bank, benen gestrekt voor je. Zak tot je ellebogen 90° maken, druk terug. Schouders laag houden.",
+   "recoveryHours": 36,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "triceps_close_grip_push_up",
+   "name": "Close-Grip Push-Up",
+   "nameNL": "Smalle Push-up",
+   "muscle": "triceps",
+   "secondary": [
+     "chest"
+   ],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 2,
+   "instructions": "Handen onder je schouders, ellebogen strak langs je lichaam. Meer triceps dan een gewone push-up.",
+   "recoveryHours": 36,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "hams_dumbbell_rdl",
+   "dumbbells": 2,
+   "name": "Dumbbell Romanian Deadlift",
+   "nameNL": "Dumbbell Romanian Deadlift",
+   "muscle": "hamstrings",
+   "secondary": [
+     "glutes",
+     "back"
+   ],
+   "equipment": [
+     "dumbbells"
+   ],
+   "difficulty": 2,
+   "instructions": "Dumbbells voor je dijen, knieën licht gebogen. Duw je heupen naar achteren en laat de dumbbells langs je benen zakken tot je rek voelt in je hamstrings. Heupen naar voren om op te komen.",
+   "recoveryHours": 48,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "glutes_dumbbell_sumo_deadlift",
+   "dumbbells": 2,
+   "name": "Dumbbell Sumo Deadlift",
+   "nameNL": "Dumbbell Sumo Deadlift",
+   "muscle": "glutes",
+   "secondary": [
+     "hamstrings",
+     "quadriceps",
+     "back"
+   ],
+   "equipment": [
+     "dumbbells"
+   ],
+   "difficulty": 2,
+   "instructions": "Breed staan, tenen naar buiten, dumbbells tussen je benen. Til vanuit je heupen en billen, rug plat, knieën naar buiten duwen.",
+   "recoveryHours": 48,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "glutes_single_leg_glute_bridge",
+   "name": "Single-Leg Glute Bridge",
+   "nameNL": "Eenbenige Glute Bridge",
+   "muscle": "glutes",
+   "secondary": [
+     "hamstrings",
+     "core"
+   ],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 2,
+   "instructions": "Op je rug, één voet op de vloer, andere been gestrekt omhoog. Duw je heup omhoog tot je lichaam recht is, knijp bovenin. Per kant.",
+   "recoveryHours": 36,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "glutes_fire_hydrant",
+   "name": "Fire Hydrant",
+   "nameNL": "Fire Hydrant",
+   "muscle": "glutes",
+   "secondary": [
+     "core"
+   ],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 1,
+   "instructions": "Op handen en knieën. Til één knie zijwaarts omhoog met de knie gebogen, romp blijft stil. Zijkant van je bil — stabiliteit voor het fietsen.",
+   "recoveryHours": 24,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "glutes_band_good_morning",
+   "name": "Band Good Morning",
+   "nameNL": "Band Good Morning",
+   "muscle": "hamstrings",
+   "secondary": [
+     "glutes",
+     "back"
+   ],
+   "equipment": [
+     "resistanceBands"
+   ],
+   "difficulty": 1,
+   "instructions": "Band onder je voeten en achter je nek. Buig voorover vanuit je heupen met een rechte rug, kom op door je heupen naar voren te duwen.",
+   "recoveryHours": 24,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "glutes_band_monster_walk",
+   "name": "Band Monster Walk",
+   "nameNL": "Band Monster Walk",
+   "muscle": "glutes",
+   "secondary": [],
+   "equipment": [
+     "resistanceBands"
+   ],
+   "difficulty": 1,
+   "instructions": "Band om je knieën of enkels, lichte squat-houding. Stap zijwaarts en houd spanning op de band. Bilzijkant en heupstabiliteit.",
+   "recoveryHours": 24,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "quads_curtsy_lunge",
+   "name": "Curtsy Lunge",
+   "nameNL": "Curtsy Lunge",
+   "muscle": "quadriceps",
+   "secondary": [
+     "glutes"
+   ],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 2,
+   "instructions": "Stap schuin achter je andere been alsof je een knieval maakt. Zak recht naar beneden, kom terug. Bil en zijkant van de heup.",
+   "recoveryHours": 36,
+   "altEquipment": [
+     "dumbbells"
+   ],
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "quads_lateral_lunge",
+   "name": "Lateral Lunge",
+   "nameNL": "Zijwaartse Lunge",
+   "muscle": "quadriceps",
+   "secondary": [
+     "glutes",
+     "hamstrings"
+   ],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 2,
+   "instructions": "Grote stap zijwaarts, zak op dat been terwijl het andere gestrekt blijft. Duw terug naar het midden. Binnenkant dij en bil.",
+   "recoveryHours": 36,
+   "altEquipment": [
+     "dumbbells"
+   ],
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "quads_dumbbell_thruster",
+   "dumbbells": 2,
+   "name": "Dumbbell Thruster",
+   "nameNL": "Dumbbell Thruster",
+   "muscle": "quadriceps",
+   "secondary": [
+     "shoulders",
+     "glutes",
+     "triceps"
+   ],
+   "equipment": [
+     "dumbbells"
+   ],
+   "difficulty": 3,
+   "instructions": "Dumbbells op je schouders. Squat diep, en gebruik de opwaartse kracht om de dumbbells boven je hoofd te drukken. Eén vloeiende beweging.",
+   "recoveryHours": 48,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "quads_jump_squat",
+   "name": "Jump Squat",
+   "nameNL": "Jump Squat",
+   "muscle": "quadriceps",
+   "secondary": [
+     "glutes",
+     "calves"
+   ],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 2,
+   "instructions": "Squat en spring explosief omhoog. Zacht landen, direct weer zakken. Kracht en snelheid — handig voor de sprint op de fiets.",
+   "recoveryHours": 36,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "quads_air_squat",
+   "name": "Air Squat",
+   "nameNL": "Squat zonder gewicht",
+   "muscle": "quadriceps",
+   "secondary": [
+     "glutes"
+   ],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 1,
+   "instructions": "Voeten op schouderbreedte, armen naar voren. Zak zo diep als je kunt met een rechte rug en hielen aan de grond.",
+   "recoveryHours": 24,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "quads_pistol_squat",
+   "name": "Pistol Squat",
+   "nameNL": "Pistol Squat",
+   "muscle": "quadriceps",
+   "secondary": [
+     "glutes",
+     "core"
+   ],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 5,
+   "instructions": "Eenbenige squat met het andere been gestrekt voor je. Houd je vast aan iets als het nog niet lukt. De ultieme balans- en beenoefening zonder gewicht.",
+   "recoveryHours": 48,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "quads_dumbbell_march",
+   "dumbbells": 2,
+   "name": "Dumbbell March",
+   "nameNL": "Dumbbell March",
+   "muscle": "quadriceps",
+   "secondary": [
+     "core",
+     "glutes"
+   ],
+   "equipment": [
+     "dumbbells"
+   ],
+   "difficulty": 1,
+   "instructions": "Dumbbells langs je lichaam, marcheer op de plaats met hoge knieën. Rustig tempo, romp stil. Heupbuigers en core.",
+   "recoveryHours": 24,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "calves_dumbbell_calf_raise",
+   "dumbbells": 2,
+   "name": "Dumbbell Calf Raise",
+   "nameNL": "Dumbbell Calf Raise",
+   "muscle": "calves",
+   "secondary": [],
+   "equipment": [
+     "dumbbells"
+   ],
+   "difficulty": 1,
+   "instructions": "Dumbbells langs je lichaam, kom hoog op je tenen en zak langzaam. Voor extra rek: tenen op een verhoging.",
+   "recoveryHours": 24,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "core_v_up",
+   "name": "V-Up",
+   "nameNL": "V-Up",
+   "muscle": "core",
+   "secondary": [],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 3,
+   "instructions": "Op je rug, armen en benen gestrekt. Kom tegelijk omhoog met armen en benen tot je een V vormt, raak je tenen aan. Gecontroleerd terug.",
+   "recoveryHours": 24,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "core_hollow_hold",
+   "name": "Hollow Hold",
+   "nameNL": "Hollow Hold",
+   "muscle": "core",
+   "secondary": [],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 2,
+   "instructions": "Op je rug, onderrug in de vloer gedrukt, armen en benen net van de grond. Houd vast. Hoe lager, hoe zwaarder.",
+   "recoveryHours": 24,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "core_flutter_kick",
+   "name": "Flutter Kick",
+   "nameNL": "Flutter Kicks",
+   "muscle": "core",
+   "secondary": [],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 2,
+   "instructions": "Op je rug, benen net boven de vloer. Kleine snelle trappen op en neer, onderrug tegen de vloer.",
+   "recoveryHours": 24,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "core_scissor_kick",
+   "name": "Scissor Kick",
+   "nameNL": "Scissor Kicks",
+   "muscle": "core",
+   "secondary": [],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 2,
+   "instructions": "Op je rug, benen omhoog. Kruis de benen om en om als een schaar. Onderrug blijft plat.",
+   "recoveryHours": 24,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "core_plank_hip_dip",
+   "name": "Plank Hip Dip",
+   "nameNL": "Plank met heupdraai",
+   "muscle": "core",
+   "secondary": [],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 2,
+   "instructions": "Onderarm-plank. Draai je heupen om en om naar links en rechts tot ze bijna de vloer raken. Schuine buikspieren.",
+   "recoveryHours": 24,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "core_toe_touch_crunch",
+   "name": "Toe Touch Crunch",
+   "nameNL": "Toe Touch Crunch",
+   "muscle": "core",
+   "secondary": [],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 2,
+   "instructions": "Op je rug, benen recht omhoog. Reik met je handen naar je tenen door je schouderbladen van de vloer te tillen.",
+   "recoveryHours": 24,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "core_reverse_crunch",
+   "name": "Reverse Crunch",
+   "nameNL": "Reverse Crunch",
+   "muscle": "core",
+   "secondary": [],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 2,
+   "instructions": "Op je rug, knieën gebogen. Trek je knieën naar je borst en til je heupen van de vloer. Onderbuik.",
+   "recoveryHours": 24,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "core_bird_dog",
+   "name": "Bird Dog",
+   "nameNL": "Bird Dog",
+   "muscle": "core",
+   "secondary": [
+     "back",
+     "glutes"
+   ],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 1,
+   "instructions": "Op handen en knieën. Strek tegelijk je rechterarm en linkerbeen, houd even, wissel. Romp beweegt niet — stabiliteit voor je onderrug.",
+   "recoveryHours": 0,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "core_dumbbell_chopper",
+   "name": "Dumbbell Chopper",
+   "nameNL": "Dumbbell Chopper",
+   "muscle": "core",
+   "secondary": [
+     "shoulders"
+   ],
+   "equipment": [
+     "dumbbells"
+   ],
+   "difficulty": 2,
+   "instructions": "Eén dumbbell met beide handen. Zwaai van laag bij je heup schuin omhoog naar de andere schouder, alsof je hout hakt. Per kant.",
+   "recoveryHours": 24,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "core_weighted_russian_twist",
+   "name": "Weighted Russian Twist",
+   "nameNL": "Russian Twist met dumbbell",
+   "muscle": "core",
+   "secondary": [],
+   "equipment": [
+     "dumbbells"
+   ],
+   "difficulty": 2,
+   "instructions": "Zit met licht gebogen knieën, voeten van de vloer, dumbbell voor je borst. Draai je romp om en om, ogen volgen de dumbbell.",
+   "recoveryHours": 24,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "core_sit_up",
+   "name": "Sit-Up",
+   "nameNL": "Sit-up",
+   "muscle": "core",
+   "secondary": [],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 1,
+   "instructions": "Op je rug, knieën gebogen, handen achter je hoofd. Kom helemaal op tot zittend, langzaam terug. Niet aan je nek trekken.",
+   "recoveryHours": 24,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "core_side_plank_reach",
+   "name": "Side Plank Reach",
+   "nameNL": "Zijplank met reik",
+   "muscle": "core",
+   "secondary": [
+     "shoulders"
+   ],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 3,
+   "instructions": "Zijplank op één hand. Reik met de bovenste arm onder je lichaam door en weer omhoog. Schuine buikspieren en schouderstabiliteit.",
+   "recoveryHours": 24,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "full_kettlebell_situp_press",
+   "name": "Kettlebell Sit-Up to Press",
+   "nameNL": "Kettlebell Sit-up met Press",
+   "muscle": "fullBody",
+   "secondary": [
+     "core",
+     "shoulders"
+   ],
+   "equipment": [
+     "kettlebell"
+   ],
+   "difficulty": 3,
+   "instructions": "Op je rug met de kettlebell op je borst. Kom op tot zittend en druk de kettlebell boven je hoofd. Gecontroleerd terug.",
+   "recoveryHours": 36,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "full_bear_crawl",
+   "name": "Bear Crawl",
+   "nameNL": "Bear Crawl",
+   "muscle": "fullBody",
+   "secondary": [
+     "core",
+     "shoulders"
+   ],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 2,
+   "instructions": "Op handen en voeten, knieën net boven de vloer. Kruip voor- en achteruit met tegengestelde hand en voet. Rug blijft vlak als een tafel.",
+   "recoveryHours": 24,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "mobility_inchworm",
+   "name": "Inchworm",
+   "nameNL": "Inchworm",
+   "muscle": "mobility",
+   "secondary": [],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 1,
+   "instructions": "Vanuit stand buig je voorover en loop je met je handen uit tot een plank, dan loop je met je voeten weer naar je handen. Hamstrings, schouders en core in één.",
+   "recoveryHours": 0,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "mobility_hip_circle",
+   "name": "Hip Circle",
+   "nameNL": "Heupcirkels",
+   "muscle": "mobility",
+   "secondary": [],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 1,
+   "instructions": "Sta op één been, maak grote cirkels met de andere knie: voor, zij, achter. Beide richtingen, beide kanten. Opent je heupen voor squats en deadlifts.",
+   "recoveryHours": 0,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "mobility_shoulder_circle",
+   "name": "Shoulder Circle",
+   "nameNL": "Schoudercirkels",
+   "muscle": "mobility",
+   "secondary": [],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 1,
+   "instructions": "Vingertoppen op je schouders, maak grote cirkels met je ellebogen. Voor- en achterwaarts. Warmt het schoudergewricht op voor drukwerk.",
+   "recoveryHours": 0,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "mobility_hamstring_stretch",
+   "name": "Standing Forward Fold",
+   "nameNL": "Staande hamstringstretch",
+   "muscle": "mobility",
+   "secondary": [],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 1,
+   "instructions": "Buig rustig voorover met bijna gestrekte benen en laat je armen hangen. Adem uit en laat je zwaarte het werk doen. 30-45 sec.",
+   "recoveryHours": 0,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "mobility_child_pose",
+   "name": "Child's Pose",
+   "nameNL": "Kindhouding",
+   "muscle": "mobility",
+   "secondary": [],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 1,
+   "instructions": "Kniel, ga zitten op je hielen en strek je armen ver naar voren, voorhoofd op de mat. Adem diep in je onderrug. Cooling-down na de deadlift.",
+   "recoveryHours": 0,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "mobility_downward_dog",
+   "name": "Downward Dog",
+   "nameNL": "Downward Dog",
+   "muscle": "mobility",
+   "secondary": [],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 1,
+   "instructions": "Omgekeerde V: handen en voeten in de vloer, heupen hoog. Duw je hielen richting de vloer en je borst richting je dijen. Kuiten, hamstrings en schouders.",
+   "recoveryHours": 0,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "mobility_plank_to_downdog",
+   "name": "Plank to Downward Dog",
+   "nameNL": "Plank naar Downward Dog",
+   "muscle": "mobility",
+   "secondary": [
+     "core",
+     "shoulders"
+   ],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 1,
+   "instructions": "Vanuit een hoge plank duw je je heupen omhoog en achteruit naar een downward dog, dan weer terug. Vloeiend op je adem.",
+   "recoveryHours": 0,
+   "video": null,
+   "clip": true
+ },
+ {
+   "id": "mobility_standing_quad_stretch",
+   "name": "Standing Quad Stretch",
+   "nameNL": "Staande quadstretch",
+   "muscle": "mobility",
+   "secondary": [],
+   "equipment": [
+     "bodyweight"
+   ],
+   "difficulty": 1,
+   "instructions": "Pak je enkel achter je en trek je hiel naar je bil, knieën bij elkaar, heup naar voren. 30-45 sec per kant. Fijn na het fietsen.",
+   "recoveryHours": 0,
+   "video": null,
+   "clip": true
  }
 ];
 
@@ -2062,3 +3246,7 @@ export const EQUIPMENT_NL = {dumbbells:'Dumbbells', bench:'Bankje', inclineBench
  latPulldown:'Lat pulldown', seatedRow:'Roeimachine', legPress:'Leg press', legCurl:'Leg curl', legExtension:'Leg extension',
  pecDeck:'Pec deck', chestPress:'Chest press', shoulderPress:'Shoulder press'};
 export const byId = Object.fromEntries(EXERCISES.map(e => [e.id, e]));
+
+/** Alleen oefeningen met een animatie (of eigen toegevoegde) komen in beeld — geen vreemde eend tussen de clips. */
+export function isVisible(e) { return !!(e && (e.clip || e.custom)); }
+export function visibleExercises() { return EXERCISES.filter(isVisible); }

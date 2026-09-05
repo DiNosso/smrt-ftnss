@@ -7,11 +7,11 @@ import * as icu from '../icu.js';
 import {
   advise, buildWorkout, mesoInfo, muscleStatus, weekStreak, adhocSession,
   mondayOf, minutesOn, heavyTargetForWeek, weeklyVolume, VOLUME_TARGETS, plannedOn, readinessSignals, plannedSplitOn,
-  sportDay, plannedSession, detectPlateaus, logTonnage, estimateMinutes, WARMUP_MIN, proposals, acceptProposal, dismissProposal, VARIANT_NL, intentOn, setIntent,
+  sportDay, plannedSession, detectPlateaus, logTonnage, estimateMinutes, WARMUP_MIN, proposals, acceptProposal, dismissProposal, VARIANT_NL, intentOn, setIntent, adaptForSoreness, SORE_NL, soreMuscles,
 } from '../engine.js';
 import { SESSIONS } from '../data/program.js';
 import { openDayPicker } from './week.js';
-import { MUSCLE_NL, EXERCISES } from '../data/exercises.js';
+import { MUSCLE_NL, EXERCISES, isVisible } from '../data/exercises.js';
 import { openWorkout } from './workout.js';
 
 export async function renderToday(app, ctx) {
@@ -457,35 +457,71 @@ function ietsAnders(iso, ctx) {
       'Jij zegt kort, volledig of niet; welke sessie het wordt (A of B) volgt uit je cyclus, en de rest van de week schuift vanzelf mee. Een vrije workout telt gewoon mee in je volume en herstel.'));
 }
 
-/** Voor de start: hoeveel tijd heb je? De sessie wordt daarop ingekort (isolatie eruit, compounds heel). */
+/**
+ * Voor je begint: hoeveel tijd heb je, en waar heb je spierpijn? De sessie wordt
+ * daarop aangepast — je ziet vooraf precies wat er blijft, wisselt of eraf gaat.
+ */
 function openTimePicker(session, adjust, ctx, defaultCap) {
   const full = buildWorkout(session, adjust);
   const fullMin = estimateMinutes(full) + WARMUP_MIN;
-  const opts = [30, 45, 60].filter(m => m < fullMin + 5);
-  const box = el('div', {}, el('h3', {}, 'Hoeveel tijd heb je?'),
-    el('p', { class: 'tiny dim' }, `Inclusief warming-up (${WARMUP_MIN} min). Bij minder tijd gaan eerst de isolatie-oefeningen eruit; bankdrukken, row en deadlift blijven altijd heel.`));
-  const list = el('div', { style: 'display:flex;flex-direction:column;gap:8px' });
-  const rowFor = (label, capTotal) => {
-    const liftCap = capTotal ? Math.max(15, capTotal - WARMUP_MIN) : null;
-    const b = buildWorkout(session, adjust, liftCap);
+  const timeOpts = [...[30, 45, 60].filter(m => m < fullMin + 5).map(m => ({ label: `${m} min`, cap: Math.max(15, m - WARMUP_MIN) })), { label: 'Alle tijd', cap: null }];
+  // standaard: alle tijd, tenzij je beschikbaarheid (of een express-variant) korter is dan de volledige sessie
+  let capIdx = timeOpts.length - 1;
+  if (defaultCap && defaultCap < estimateMinutes(full)) {
+    const i = timeOpts.findIndex(o => o.cap != null && o.cap >= defaultCap);
+    capIdx = i >= 0 ? i : timeOpts.length - 2;
+  }
+  const sore = new Set();
+  // spierpijn uit de check-in van vandaag staat alvast aan
+  const ci = get().checkins?.[todayISO()]?.soreness || {};
+  for (const g of Object.keys(SORE_NL)) if ([...soreMuscles([g])].some(m => ci[m])) sore.add(g);
+  // alleen spiergroepen die in deze sessie voorkomen
+  const inSession = new Set(full.flatMap(sl => [sl.exercise?.muscle, ...(sl.exercise?.secondary || [])]));
+  const groups = Object.keys(SORE_NL).filter(g => [...soreMuscles([g])].some(m => inSession.has(m)));
+
+  const box = el('div', {}, el('h3', {}, 'Voor je begint'));
+  const timeRow = el('div', { class: 'seg' });
+  const soreRow = el('div', { class: 'row wrap' });
+  const preview = el('div', { class: 'card raised mt' });
+  const startBtn = el('button', { class: 'btn-primary btn-block mt' }, '▶ Start');
+
+  const draw = () => {
+    timeRow.innerHTML = '';
+    timeOpts.forEach((o, i) => timeRow.append(el('button', { class: i === capIdx ? 'on' : '', onclick: () => { capIdx = i; draw(); } }, o.label)));
+    soreRow.innerHTML = '';
+    for (const g of groups) soreRow.append(el('button', { class: 'btn-sm' + (sore.has(g) ? ' btn-secondary' : ''), onclick: () => { sore.has(g) ? sore.delete(g) : sore.add(g); draw(); } }, SORE_NL[g]));
+    // preview
+    const cap = timeOpts[capIdx].cap;
+    let b = buildWorkout(session, adjust, cap);
+    const trimmed = b.trimmedNote;
+    const ad = adaptForSoreness(b, [...sore]);
+    b = ad.slots;
     const est = estimateMinutes(b) + WARMUP_MIN;
-    const keep = b.map(x => `${x.exercise?.nameNL || x.ex} ${x.sets}×`).join(' · ');
-    const gone = (b.dropped || []).map(x => x.exercise?.nameNL || x.ex);
-    return el('button', { class: 'btn-secondary btn-block', style: 'text-align:left;padding:12px 14px', onclick: () => { close(); openWorkout(session, adjust, ctx, liftCap); } },
-      el('div', { class: 'spread' }, el('strong', {}, label), el('span', { class: 'pill' }, `~${est} min`)),
-      el('div', { class: 'tiny', style: 'margin-top:4px;white-space:normal;font-weight:400' }, keep),
-      gone.length ? el('div', { class: 'tiny dim', style: 'margin-top:2px;white-space:normal;font-weight:400' }, `eraf: ${gone.join(', ')}`) : null);
+    preview.innerHTML = '';
+    preview.append(el('div', { class: 'spread' }, el('strong', {}, `${b.length} oefeningen`), el('span', { class: 'pill' }, `~${est} min incl. warming-up`)));
+    preview.append(el('div', { class: 'tiny', style: 'margin-top:6px;white-space:normal' },
+      b.map(x => `${x.exercise?.nameNL || x.ex} ${x.sets}×${x.eased ? ' (rustiger)' : ''}`).join(' · ')));
+    if (trimmed) preview.append(el('div', { class: 'tiny dim mt', style: 'white-space:normal' }, '⏱ ' + trimmed));
+    if (ad.changes.length) preview.append(el('div', { class: 'tiny dim mt', style: 'white-space:normal' }, '🩹 ' + ad.changes.join(' · ')));
+    startBtn.textContent = b.length ? '▶ Start' : 'Niets over — kies anders';
+    startBtn.disabled = !b.length;
   };
-  for (const m of opts) list.append(rowFor(`${m} minuten`, m));
-  list.append(rowFor('Alle tijd', null));
-  box.append(list);
+  draw();
+  box.append(
+    el('h5', { class: 'mt' }, 'Hoeveel tijd heb je?'),
+    el('p', { class: 'tiny dim' }, `Inclusief warming-up (${WARMUP_MIN} min). Bij minder tijd gaan eerst de isolatie-oefeningen eruit; de compounds blijven heel.`),
+    timeRow,
+    el('h5', { class: 'mt' }, 'Spierpijn of gevoelig?'),
+    el('p', { class: 'tiny dim' }, 'Tik aan wat gevoelig is. Oefeningen die die spier primair belasten worden vervangen door een frisse spiergroep; waar de spier alleen meedoet ga je iets rustiger.'),
+    soreRow, preview, startBtn);
   const close = sheet(box);
+  startBtn.addEventListener('click', () => { close(); openWorkout(session, adjust, ctx, timeOpts[capIdx].cap, { sore: [...sore] }); });
 }
 
 function openAdhocPicker(ctx) {
   const myEq = new Set(S().equipment);
   if (S().hasPullUpBar) myEq.add('pullUpBar');
-  const pool = EXERCISES.filter(e => e.equipment.every(q => myEq.has(q)));
+  const pool = EXERCISES.filter(e => isVisible(e) && e.equipment.every(q => myEq.has(q)));
   const chosen = new Set();
   let filterMuscle = null;
 

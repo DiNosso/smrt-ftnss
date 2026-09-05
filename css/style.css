@@ -611,3 +611,26 @@ body.resting #app { padding-bottom: calc(var(--tabbar-h) + 96px); }
 .exblock .demo.clip { margin-top: 4px; }
 .ssblock + .ssblock { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
 .exrow.cur { box-shadow: inset 3px 0 0 var(--accent); }
+
+/* Keuzeknoppen (dagkiezer): rustig als niet gekozen, duidelijk als wel */
+.btn-block.choice { text-align: left; padding: 12px 14px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text); }
+.btn-block.choice.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: rgba(56, 237, 208, .08); }
+
+/* ---------- Tablet / iPad (landscape en portrait) ---------- */
+@media (min-width: 820px) {
+  #app { max-width: 1040px; padding-left: 24px; padding-right: 24px; }
+  .sheet { max-width: 640px; border-radius: 22px; bottom: 24px; }
+  /* startscherm & overige tabs: kaarten in twee kolommen */
+  #app.cols { column-count: 2; column-gap: 18px; }
+  #app.cols > * { break-inside: avoid; }
+  #app.cols > .card { display: inline-block; width: 100%; margin-bottom: 14px; }
+  /* speler: animatie links, sets rechts */
+  .player-head { margin: 0 -24px; padding-left: 24px; padding-right: 24px; }
+  .exblock .exbody { display: grid; grid-template-columns: minmax(280px, 42%) 1fr; gap: 22px; align-items: start; }
+  .exblock .exbody .demo.clip { margin-top: 0; }
+  .exblock .exbody .exform > .mt:first-child { margin-top: 0; }
+  .ssblock + .ssblock { margin-top: 22px; padding-top: 22px; }
+}
+@media (min-width: 820px) {
+  #app.cols > .herowrap, #app.cols > .syncbar, #app.cols > .ptr, #app.cols > h2, #app.cols > .pagehead { column-span: all; }
+}

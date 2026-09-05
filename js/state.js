@@ -3,7 +3,7 @@
 
 import { mirror } from './backup.js';
 
-export const VERSION = '2.13.0';
+export const VERSION = '2.14.0';
 
 const KEY = 'fait.v1';
 
@@ -32,6 +32,11 @@ const DEFAULTS = {
     tvPairCode: null,          // koppelcode voor het tv-scherm
     tvEnabled: false,          // tv-scherm meesturen tijdens een workout
     lastBackupAt: null,        // ISO-datum laatste backup-export
+    // Sync tussen apparaten (iPad ↔ iPhone) via een eigen Supabase-tabel.
+    syncUrl: '',               // https://xxxx.supabase.co
+    syncKey: '',               // anon/public key
+    syncCode: '',              // geheime code die jouw rij afschermt; op elk apparaat dezelfde
+    syncEnabled: false,
   },
   weights: {},                 // {'YYYY-MM-DD': kg} handmatige wegingen
   checkins: {},                // {'YYYY-MM-DD': {motivation: 1-5, sleepScore: 1-5, soreness: {muscle: 0|1|2}}}
@@ -50,6 +55,7 @@ const DEFAULTS = {
   lastWeights: {},             // {exerciseId: {weight, reps, date}}
   icuCache: null,              // {fetchedAt, wellness: [...], activities: [...]}
   activeWorkout: null,         // {sessionId, startedAt, savedAt, sets, adjust, timeCap} lopende training
+  updatedAt: 0,                // laatste wijziging (ms) — voor de sync
 };
 
 let state = load();
@@ -80,6 +86,7 @@ export const STORAGE_KEY = KEY;
 
 let mirrorTimer = null;
 export function save() {
+  state.updatedAt = Date.now(); // voor sync: wie is het nieuwst?
   const json = JSON.stringify(state);
   try {
     localStorage.setItem(KEY, json);
@@ -91,6 +98,18 @@ export function save() {
   // Stille kopie, samengevoegd zodat we niet bij elke toetsaanslag schrijven.
   clearTimeout(mirrorTimer);
   mirrorTimer = setTimeout(() => { mirror(json); }, 1500);
+  // Sync-module luistert hierop (los gekoppeld, geen import-cirkel).
+  try { window.dispatchEvent(new CustomEvent('fait:saved')); } catch { /* ok */ }
+}
+
+/** Voor de sync: staat van buiten overnemen zonder de sync opnieuw te triggeren. */
+export function replaceState(next, { silent = false } = {}) {
+  state = deepMerge(structuredClone(DEFAULTS), next);
+  if (silent) {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* ok */ }
+    clearTimeout(mirrorTimer);
+    mirrorTimer = setTimeout(() => { mirror(JSON.stringify(state)); }, 1500);
+  } else save();
 }
 
 export function get() { return state; }
