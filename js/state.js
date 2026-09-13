@@ -3,7 +3,7 @@
 
 import { mirror } from './backup.js';
 
-export const VERSION = '2.14.0';
+export const VERSION = '2.15.0';
 
 const KEY = 'fait.v1';
 
@@ -17,6 +17,7 @@ const DEFAULTS = {
     hasPullUpBar: false,
     weightStepKg: 2,
     dumbbellWeights: '',       // bijv. "4,6,8,10,12,16,20" → exacte suggesties
+    bandColors: '',            // bijv. "geel, rood, zwart" (licht → zwaar) → kleur kiezen i.p.v. kg bij bandoefeningen
     programStart: null,        // ISO-datum van week 1, maandag
     goalMode: 'recomp',        // 'recomp' | 'cut' | 'maintain'
     pushToIcu: true,           // afgeronde workouts naar intervals.icu sturen

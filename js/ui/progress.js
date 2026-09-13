@@ -27,7 +27,7 @@ export function renderProgress(app, ctx) {
       ]),
       el('p', { class: 'tiny mt mb0', style: eq.pctEffective >= 70 ? 'color:var(--primary)' : 'color:var(--warn)' }, eq.advice),
       explain('Waarom dit telt', el('p', { class: 'mb0' },
-        'Je rapport noemt sets met 5+ reps in reserve "junk volume": ze kosten tijd en herstel, maar geven te weinig prikkel om te groeien. Sets met RIR 0-3 zitten in de effectieve zone; de laatste set van elke oefening mag richting RIR 0-1. Hoe eerlijker je je RIR logt, hoe beter de app je volgende gewicht kiest.'))));
+        'Dit heet sets met 5+ reps in reserve "junk volume": ze kosten tijd en herstel, maar geven te weinig prikkel om te groeien. Sets met RIR 0-3 zitten in de effectieve zone; de laatste set van elke oefening mag richting RIR 0-1. Hoe eerlijker je je RIR logt, hoe beter de app je volgende gewicht kiest.'))));
   }
 
   // --- Spierkaart ---
@@ -61,7 +61,7 @@ export function renderProgress(app, ctx) {
       el('div', { class: 'track' }, el('div', { class: `fill ${cls}`, style: `width:${pct}%` })),
       el('span', { class: 'val' }, `${v} / ${lo}-${hi}`)));
   }
-  volCard.append(explain('Over deze doelen', el('p', { class: 'mb0' }, 'Doelen uit je rapport: borst 12-16, armen 8-12 werksets per week. Groen = in de sweet spot, geel = boven de MRV-grens (meer is dan niet beter).')));
+  volCard.append(explain('Over deze doelen', el('p', { class: 'mb0' }, 'Doelen: borst 12-16, armen 8-12 werksets per week. Groen = in de sweet spot, geel = boven de MRV-grens (meer is dan niet beter).')));
   app.append(volCard);
 
   // --- Volume-historie (8 weken, per spiergroep) ---

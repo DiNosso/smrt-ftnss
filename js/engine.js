@@ -675,7 +675,7 @@ export function advise(iso, cache) {
     else if (form <= -12) { reasons.push(`Je vorm is ${form} — je draagt duidelijke vermoeidheid mee.`); bump('lighter'); }
   }
 
-  // 3. Slaap (uit intervals.icu wellness) — de grootste multiplier volgens je rapport
+  // 3. Slaap (uit intervals.icu wellness) — de grootste multiplier
   const sleep = icu.sleepHours(cache, iso);
   const sleepAvg = icu.avg7(cache, 'sleepSecs', iso);
   if (sleep == null && checkin?.sleepScore != null && checkin.sleepScore <= 2) {
@@ -683,7 +683,7 @@ export function advise(iso, cache) {
     bump('lighter');
   }
   if (sleep != null) {
-    if (sleep < 5.5) { reasons.push(`Maar ${sleep.toFixed(1)} uur geslapen — vandaag geen zware prikkel én geen agressief calorietekort (rapport: spierafbraak +60%).`); bump('easy'); }
+    if (sleep < 5.5) { reasons.push(`Maar ${sleep.toFixed(1)} uur geslapen — vandaag geen zware prikkel én geen agressief calorietekort.`); bump('easy'); }
     else if (sleep < 7) { reasons.push(`${sleep.toFixed(1)} uur geslapen (<7u) — trainen mag, maar iets lichter en vanavond op tijd naar bed.`); bump('lighter'); }
   }
   if (sleepAvg != null && sleepAvg / 3600 < 6.5) {
@@ -794,7 +794,7 @@ export function readinessSignals(iso, cache) {
   if (sleep != null) {
     add('Slaap afgelopen nacht', `${sleep.toFixed(1)} uur`,
       sleep < 5.5 ? 'bad' : sleep < 7 ? 'warn' : 'good',
-      'Onder 7 uur verschuift herstel volgens je rapport van vet naar spier.');
+      'Onder 7 uur verschuift herstel van vet naar spier.');
   } else if (ci?.sleepScore != null) {
     add('Slaap (check-in)', `${ci.sleepScore}/5`, ci.sleepScore <= 2 ? 'warn' : 'good', 'Uit je eigen check-in — intervals.icu had geen slaapdata.');
   } else {
@@ -862,7 +862,7 @@ export function buildWorkout(session, adjust = { setFactor: 1, rirBonus: 0, rest
     const sets = Math.max(1, Math.round(slot.sets * (adjust.setFactor ?? 1)));
     const rir = Math.min(5, slot.rir + (adjust.rirBonus ?? 0));
     // Rust boven de 90 seconden levert geen meetbare extra spiergroei op
-    // (Singer 2024). Langer rusten bij vermoeidheid mag, maar we kappen het af:
+    //. Langer rusten bij vermoeidheid mag, maar we kappen het af:
     // 3,5 minuut tussen sets eet je hele tijdsbudget op.
     const rest = Math.min(slot.rest + (adjust.restBonus ?? 0), 165);
     return { ...slot, exercise: ex, sets, rir, rest, suggestion: suggestWeight(slot.ex, slot.reps) };
@@ -951,9 +951,11 @@ export function suggestWeight(exId, repRange) {
 
   // --- lichaamsgewicht/band: sturen op reps en tempo ---
   if (isBodyweight) {
-    if (avgRir != null && avgRir >= 3.5) return { weight: w || null, isUp: true, text: `Vorige keer ${reps} reps met ${avgRir.toFixed(0)} in reserve — véél te licht`, why: 'Maak het zwaarder: band erbij, 3 sec zakken, of pauze onderin. Mik op RIR 1.' };
-    if (rangeFull) return { weight: w || null, isUp: true, text: `Vorige keer ${reps} reps — range vol`, why: 'Verzwaren: band, tempo (3 sec zakken) of een moeilijkere variant.' };
-    return { weight: w || null, text: `Vorige keer ${reps} reps — pak er 1-2 bij`, why: 'Blijf binnen de range tot je de bovengrens haalt.' };
+    const band = prev?.sets?.find(x => x.band)?.band;
+    const bandTxt = band ? ` (${band} band)` : '';
+    if (avgRir != null && avgRir >= 3.5) return { weight: w || null, isUp: true, text: `Vorige keer ${reps} reps${bandTxt} met ${avgRir.toFixed(0)} in reserve — véél te licht`, why: band ? 'Pak een zwaardere band, of maak de beweging langzamer. Mik op RIR 1.' : 'Maak het zwaarder: band erbij, 3 sec zakken, of pauze onderin. Mik op RIR 1.' };
+    if (rangeFull) return { weight: w || null, isUp: true, text: `Vorige keer ${reps} reps${bandTxt} — range vol`, why: band ? 'Zwaardere band, of langzamer tempo.' : 'Verzwaren: band, tempo (3 sec zakken) of een moeilijkere variant.' };
+    return { weight: w || null, text: `Vorige keer ${reps} reps${bandTxt} — pak er 1-2 bij`, why: 'Blijf binnen de range tot je de bovengrens haalt.' };
   }
 
   // --- met gewicht ---
@@ -1018,7 +1020,7 @@ export function effortQuality(days = 14) {
     pctEffective: Math.round((effective / total) * 100),
     pctFailure: Math.round((failure / total) * 100),
     advice: junk / total > 0.35
-      ? 'Meer dan een derde van je sets bleef ver van spierfalen (RIR 4+). Dat is volgens je rapport "junk volume": de prikkel is te klein om te groeien. Ga zwaarder — de app stelt het nu vanzelf voor.'
+      ? 'Meer dan een derde van je sets bleef ver van spierfalen (RIR 4+). Dat is "junk volume": de prikkel is te klein om te groeien. Ga zwaarder — de app stelt het nu vanzelf voor.'
       : failure / total < 0.2
         ? 'Je traint netjes, maar zelden echt tegen je grens aan. Pak op de laatste set van elke oefening bewust RIR 0-1.'
         : 'Sterk: je sets landen consequent in de zone waar spiergroei gebeurt.',
@@ -1127,7 +1129,7 @@ export function weightTrend(cache) {
   let status = 'ok', message = null;
   if (pctPerWeek <= -0.7) {
     status = 'too_fast';
-    message = `Je verliest ${Math.abs(pctPerWeek).toFixed(1)}%/week — sneller dan de 0,7%-grens uit je rapport. Risico op spierverlies: eet iets meer (vooral eiwit) en bewaak je slaap.`;
+    message = `Je verliest ${Math.abs(pctPerWeek).toFixed(1)}%/week — sneller dan de 0,7%-grens. Risico op spierverlies: eet iets meer (vooral eiwit) en bewaak je slaap.`;
   } else if (goal === 'cut') {
     // stagnatie-check over ~4 weken
     const fourWk = avg(addDays(today, -27), addDays(today, -21));
@@ -1136,7 +1138,7 @@ export function weightTrend(cache) {
       message = 'Al ~4 weken geen daling. Overweeg −100 kcal per dag (bijv. één snack minder) — kleine stap, opnieuw meten.';
     }
   } else if (pctPerWeek < -0.1 && pctPerWeek > -0.7) {
-    message = `Mooi tempo: ${Math.abs(pctPerWeek).toFixed(1)}%/week — precies de recomp-zone uit je rapport.`;
+    message = `Mooi tempo: ${Math.abs(pctPerWeek).toFixed(1)}%/week — precies de recomp-zone.`;
   }
   return { series, latest, nowAvg, prevAvg, pctPerWeek, status, message };
 }
@@ -1601,6 +1603,15 @@ export function setKg(s) {
 /** Tonnage (kg × reps) van een log, met dubbele dumbbells meegeteld. */
 export function logTonnage(log) {
   return Math.round(log.sets.reduce((t, s) => t + (s.done ? setKg(s) * (s.reps || 0) : 0), 0));
+}
+
+/** Alleen weerstandsband(en)? Dan kies je een kleur i.p.v. kilo's. */
+export function isBandOnly(ex) {
+  return !!ex && ex.equipment.includes('resistanceBands') && !ex.equipment.some(q => ['dumbbells', 'kettlebell', 'barbell'].includes(q));
+}
+/** Jouw bandkleuren, licht → zwaar, uit Instellingen. */
+export function bandColors() {
+  return String(S().bandColors || '').split(/[,;\n]+/).map(x => x.trim()).filter(Boolean);
 }
 
 export function isBodyweightOnly(ex) {

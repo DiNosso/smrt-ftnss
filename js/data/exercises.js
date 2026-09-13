@@ -1868,7 +1868,7 @@ export const EXERCISES = [
   "video": "rX-rWx0Ujzo",
   "instructions": "Leg de band over je bovenrug en klem de uiteinden onder je handen. Doe push-ups; bovenin levert de band juist maximale weerstand, zodat de spanning op je borst nooit wegvalt.",
   "recoveryHours": 36,
-  "tips": "Uit je rapport: de band compenseert precies het dode punt bovenin de push-up.",
+  "tips": "De band compenseert precies het dode punt bovenin de push-up.",
   "clip": true
  },
  {

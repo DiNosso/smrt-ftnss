@@ -12,7 +12,7 @@ import {
 import { SESSIONS } from '../data/program.js';
 import { openDayPicker } from './week.js';
 import { MUSCLE_NL, EXERCISES, isVisible } from '../data/exercises.js';
-import { openWorkout } from './workout.js';
+import { openWorkout, saveUnfinishedWorkout } from './workout.js';
 
 export async function renderToday(app, ctx) {
   const iso = todayISO();
@@ -235,14 +235,22 @@ export async function renderToday(app, ctx) {
 
   // ---------- Onafgemaakte training ----------
   const bezig = get().activeWorkout;
-  if (bezig && (Date.now() - bezig.savedAt) < 6 * 3600 * 1000 && bezig.sets?.some(x => x.done)) {
+  if (bezig && bezig.sets?.some(x => x.done)) {
     const sess = SESSIONS[bezig.sessionId];
     const af = bezig.sets.filter(x => x.done).length;
+    const startDag = todayISO(new Date(bezig.startedAt || bezig.savedAt));
+    const vandaag = startDag === iso;
+    const dagTxt = new Date(startDag + 'T12:00:00').toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
     app.append(el('div', { class: 'card', style: 'border-color:var(--accent)' },
-      cardHead(ICO.bolt, 'Training nog bezig'),
-      el('p', { class: 'tiny dim' }, `${sess?.name || 'Workout'} — ${af} van de ${bezig.sets.length} sets ingevuld.`),
+      cardHead(ICO.bolt, vandaag ? 'Training nog bezig' : 'Niet-afgeronde training'),
+      el('p', { class: 'tiny dim' }, `${sess?.name || 'Workout'}${vandaag ? '' : ` van ${dagTxt}`} — ${af} van de ${bezig.sets.length} sets ingevuld${vandaag ? '.' : ', maar nooit opgeslagen. Sla hem alsnog op, dan telt hij mee op die dag.'}`),
+      !vandaag ? el('button', { class: 'btn-primary btn-block', style: 'margin-bottom:8px', onclick: () => {
+        const log = saveUnfinishedWorkout(bezig);
+        toast(log ? `✓ Opgeslagen als training van ${dagTxt} (${log.sets.length} sets)` : 'Niets op te slaan');
+        ctx.render();
+      } }, `✓ Alsnog opslaan als ${dagTxt}`) : null,
       el('div', { class: 'row' },
-        el('button', { class: 'btn-primary grow', onclick: () => openWorkout(sess, bezig.adjust, ctx, bezig.timeCap) }, '▶ Hervatten'),
+        vandaag ? el('button', { class: 'btn-primary grow', onclick: () => openWorkout(sess, bezig.adjust, ctx, bezig.timeCap) }, '▶ Hervatten') : el('span', { class: 'grow' }),
         el('button', { class: 'btn-sm', onclick: () => {
           if (confirm('Deze training weggooien? De ingevulde sets verdwijnen dan definitief.')) {
             update(st => { st.activeWorkout = null; }); ctx.render();

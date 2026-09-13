@@ -3,9 +3,9 @@
 
 import { el, videoBlock, demoBlock, visualBlock, fmtTime, toast, sheet, confetti, cardHead, explain, ICO } from './common.js';
 import { get, S, update, todayISO } from '../state.js';
-import { buildWorkout, adaptForSoreness, recordProgress, detectPRs, warmupFor, alternativesFor, suggestWeight, nextWeight, stepDown, lastSetCue, calibrate, estimateFromKnown, isBodyweightOnly } from '../engine.js';
+import { buildWorkout, adaptForSoreness, recordProgress, detectPRs, warmupFor, alternativesFor, suggestWeight, nextWeight, stepDown, lastSetCue, calibrate, estimateFromKnown, isBodyweightOnly, isBandOnly, bandColors, lastSessionSets } from '../engine.js';
 import { byId, MUSCLE_NL } from '../data/exercises.js';
-import { WARMUP } from '../data/program.js';
+import { WARMUP, COOLDOWN, SESSIONS } from '../data/program.js';
 import { openTV } from './cast.js';
 import { connect as tvConnect } from '../tvsync.js';
 import * as icu from '../icu.js';
@@ -91,19 +91,26 @@ export function openWorkout(session, adjust, ctx, timeCap = null, opts = {}) {
       st.activeWorkout = {
         sessionId: session.id, startedAt, savedAt: Date.now(),
         adjust, timeCap, sore,
-        sets: sets.map(x => ({ ex: x.ex, slotIdx: x.slotIdx, set: x.set, reps: x.reps, weight: x.weight, rir: x.rir, done: x.done })),
+        sets: sets.map(x => ({ ex: x.ex, slotIdx: x.slotIdx, set: x.set, reps: x.reps, weight: x.weight, band: x.band || null, rir: x.rir, done: x.done, userEdited: !!x.userEdited })),
         slotEx: slots.map(sl => sl.ex),
       };
     });
   }
   function clearPersisted() { update(st => { st.activeWorkout = null; }); }
 
-  // Eerder afgebroken training van vandaag? Zet de ingevulde sets terug.
-  const saved = get().activeWorkout;
-  if (saved && saved.sessionId === session.id && (Date.now() - saved.savedAt) < 6 * 3600 * 1000) {
+  // Eerder afgebroken training? Zelfde sessie van vandaag → hervatten. Iets anders
+  // (andere sessie, of van een eerdere dag) → eerst alsnog opslaan, nooit stilletjes
+  // overschrijven: dat is precies hoe je een training kwijtraakt.
+  let saved = get().activeWorkout;
+  if (saved && saved.sets?.some(x => x.done) && (saved.sessionId !== session.id || todayISO(new Date(saved.startedAt)) !== iso)) {
+    const log = saveUnfinishedWorkout(saved);
+    if (log) setTimeout(() => toast(`Niet-afgeronde training van ${fmtDayNL(log.date)} alsnog opgeslagen (${log.sets.length} sets)`), 500);
+    saved = null;
+  }
+  if (saved && saved.sessionId === session.id) {
     for (const old of saved.sets) {
       const cur = sets.find(x => x.slotIdx === old.slotIdx && x.set === old.set);
-      if (cur) Object.assign(cur, { reps: old.reps, weight: old.weight, rir: old.rir, done: old.done });
+      if (cur) Object.assign(cur, { reps: old.reps, weight: old.weight, band: old.band || null, rir: old.rir, done: old.done, userEdited: !!old.userEdited });
     }
     if (saved.sets.some(x => x.done)) {
       setTimeout(() => toast(`Training hervat — ${saved.sets.filter(x => x.done).length} sets stonden al ingevuld`), 400);
@@ -128,10 +135,13 @@ export function openWorkout(session, adjust, ctx, timeCap = null, opts = {}) {
   let restEl = null, restIv = null;
   function startRest(seconds, { onDone = null, nextName = null } = {}) {
     stopRest();
-    let remain = seconds;
+    // Op een tijdstip rekenen, niet aftellen: schakel je van app of gaat het scherm
+    // op slot, dan loopt de klok gewoon door en klopt hij als je terugkomt.
     const total = seconds;
-    restState = { left: remain, total };
-    const timeEl = el('span', { class: 'time' }, fmtTime(remain));
+    let until = Date.now() + seconds * 1000;
+    const left = () => Math.max(0, Math.ceil((until - Date.now()) / 1000));
+    restState = { left: left(), total };
+    const timeEl = el('span', { class: 'time' }, fmtTime(left()));
     const rr = el('div', { class: 'rring' });
     const C = 2 * Math.PI * 18;
     rr.innerHTML = `<svg viewBox="0 0 42 42"><circle class="t" cx="21" cy="21" r="18" fill="none" stroke-width="3.5"/>
@@ -145,21 +155,28 @@ export function openWorkout(session, adjust, ctx, timeCap = null, opts = {}) {
       : el('button', { class: 'btn-sm btn-ghost', onclick: stopRest }, '✕');
     restEl = el('div', { class: 'resttimer' },
       rr, timeEl, label,
-      el('button', { class: 'btn-sm', onclick: () => { remain += 30; } }, '+30s'),
+      el('button', { class: 'btn-sm', onclick: () => { until += 30000; tickUI(); } }, '+30s'),
       skip);
     document.body.append(restEl);
     document.body.classList.add('resting');
-    restIv = setInterval(() => {
-      remain -= 1;
-      restState = { left: remain, total };
-      timeEl.textContent = fmtTime(Math.max(0, remain));
-      vc.setAttribute('stroke-dashoffset', (C * (1 - Math.max(0, remain) / total)).toFixed(1));
-      if (remain === 3 || remain === 2 || remain === 1) tick();
-      if (remain <= 0) { beep(); stopRest(); onDone?.(); }
-    }, 1000);
+    let lastShown = left();
+    const tickUI = () => {
+      const l = left();
+      restState = { left: l, total };
+      timeEl.textContent = fmtTime(l);
+      vc.setAttribute('stroke-dashoffset', (C * (1 - l / Math.max(1, total))).toFixed(1));
+      if (l !== lastShown && l <= 3 && l > 0) tick();
+      lastShown = l;
+      if (l <= 0) { beep(); stopRest(); onDone?.(); }
+    };
+    restIv = setInterval(tickUI, 250);
+    restVis = () => { if (document.visibilityState === 'visible') tickUI(); };
+    document.addEventListener('visibilitychange', restVis);
   }
+  let restVis = null;
   function stopRest() {
     clearInterval(restIv); restEl?.remove(); restEl = null; restState = null;
+    if (restVis) { document.removeEventListener('visibilitychange', restVis); restVis = null; }
     document.body.classList.remove('resting');
   }
 
@@ -213,6 +230,7 @@ export function openWorkout(session, adjust, ctx, timeCap = null, opts = {}) {
       idxs.forEach(i => seen.add(i));
       pages.push({ kind: 'ex', idxs });
     });
+    if (session.type === 'heavy') pages.push({ kind: 'cooldown' });
     pages.push({ kind: 'finish' });
     return pages;
   }
@@ -220,7 +238,7 @@ export function openWorkout(session, adjust, ctx, timeCap = null, opts = {}) {
   const exPages = () => pages.filter(p => p.kind === 'ex');
   const pageDone = p => p.kind === 'ex' && sets.filter(x => p.idxs.includes(x.slotIdx)).every(x => x.done);
   const pageOf = si => pages.findIndex(p => p.kind === 'ex' && p.idxs.includes(si));
-  const pageName = p => p.kind === 'start' ? 'Overzicht' : p.kind === 'warmup' ? 'Warming-up' : p.kind === 'finish' ? 'Afronden'
+  const pageName = p => p.kind === 'start' ? 'Overzicht' : p.kind === 'warmup' ? 'Warming-up' : p.kind === 'cooldown' ? 'Cooling-down' : p.kind === 'finish' ? 'Afronden'
     : p.idxs.map(i => slots[i].exercise?.nameNL || slots[i].ex).join(' + ');
   // Hervatten: spring naar de eerste oefening waar nog iets open staat.
   let pageIdx = 0;
@@ -229,7 +247,8 @@ export function openWorkout(session, adjust, ctx, timeCap = null, opts = {}) {
     pageIdx = firstOpen ? pageOf(firstOpen.slotIdx) : pages.length - 1;
   }
   let pagerEl = null, navPos = null, navDots = null, navPrev = null, navNext = null;
-  const warmupState = { gedaan: new Set() };
+  let finishPrompted = false;
+  const warmupState = { gedaan: new Set(), cdGedaan: new Set() };
 
   function renderAll() {
     app.innerHTML = '';
@@ -308,7 +327,8 @@ export function openWorkout(session, adjust, ctx, timeCap = null, opts = {}) {
     let node;
     if (p.kind === 'start') node = startPage();
     else if (p.kind === 'warmup') node = warmupCard(session.type !== 'snack' ? warmupFor(slots) : null);
-    else if (p.kind === 'finish') node = finishPage();
+    else if (p.kind === 'cooldown') node = cooldownCard();
+    else if (p.kind === 'finish') { node = finishPage(); if (sets.length && sets.every(x => x.done) && !finishPrompted) { finishPrompted = true; setTimeout(finish, 350); } }
     else node = exercisePage(p);
     node.classList.add('page', dir > 0 ? 'from-right' : dir < 0 ? 'from-left' : 'from-none');
     pagerEl.append(node);
@@ -408,6 +428,54 @@ export function openWorkout(session, adjust, ctx, timeCap = null, opts = {}) {
     return card;
   }
 
+  /** Welke regio's komen in deze sessie voor? Bepaalt welke warming-up- en cooling-down-onderdelen zinvol zijn. */
+  function regionsInSession() {
+    const LEGS = new Set(['quadriceps', 'hamstrings', 'glutes', 'calves']);
+    const r = new Set(['all']);
+    for (const sl of slots) {
+      const m = sl.exercise?.muscle;
+      if (!m) continue;
+      if (LEGS.has(m)) r.add('legs'); else if (m !== 'core' && m !== 'mobility') r.add('upper');
+    }
+    return r;
+  }
+
+  /** Cooling-down: statisch rekken, ná het werk. Optioneel — afronden kan altijd direct. */
+  function cooldownCard() {
+    const gedaan = warmupState.cdGedaan;
+    const items = COOLDOWN.filter(c => regionsInSession().has(c.region));
+    const card = el('div', { class: 'card', style: 'border-color:var(--secondary)' });
+    const lijst = el('div');
+    const teken = () => {
+      lijst.innerHTML = '';
+      for (const w of items) {
+        const af = gedaan.has(w.id);
+        const rij = el('div', { class: 'wu' + (af ? ' done' : '') });
+        const tijd = el('span', { class: 'wutime' }, `${w.sec}s`);
+        const startKnop = el('button', { class: 'btn-sm' }, af ? '✓' : '▶');
+        startKnop.addEventListener('click', () => {
+          if (af) { gedaan.delete(w.id); teken(); return; }
+          startWarmupTimer(w, tijd, () => { gedaan.add(w.id); teken(); });
+        });
+        const ex = w.ex ? byId[w.ex] : null;
+        rij.append(...[
+          el('div', { class: 'wuhead' }, el('span', { class: 'wufase' }, 'Rek'), el('span', { class: 'grow', style: 'font-size:.92rem' }, w.name), tijd, startKnop),
+          el('div', { class: 'tiny dim' }, w.detail),
+          ex ? visualBlock(ex, { tag: '', maxVh: 0.3 }) : null,
+          el('div', { class: 'tiny', style: 'color:var(--primary);margin-top:3px' }, w.why),
+        ].filter(Boolean));
+        lijst.append(rij);
+      }
+    };
+    teken();
+    card.append(
+      el('div', { class: 'spread' }, el('h3', { class: 'mb0' }, '🧘 Cooling-down'), el('span', { class: 'tiny dim' }, `±${Math.round(items.reduce((t, x) => t + x.sec, 0) / 60 * 1.6)} min`)),
+      el('p', { class: 'tiny dim' }, 'Nú is rekken wel goed: het kost geen kracht meer en dit is het moment om bewegingsbereik te winnen. 30-60 s per stretch, rustig ademen. Overslaan mag.'),
+      lijst,
+      el('button', { class: 'btn-primary btn-block mt', onclick: () => goTo(pageIdx + 1) }, 'Naar afronden ›'));
+    return card;
+  }
+
   /**
    * Begeleide warming-up: één onderdeel tegelijk, met aftelklok en demo.
    * Ingeklapt zodra je klaar bent, zodat het scherm niet vol blijft staan.
@@ -420,7 +488,7 @@ export function openWorkout(session, adjust, ctx, timeCap = null, opts = {}) {
       el('span', { class: 'tiny dim' }, '±8 min'));
     const lijst = el('div');
     const klaarBtn = el('button', { class: 'btn-primary btn-block mt', onclick: () => goTo(pageIdx + 1) }, 'Naar de eerste oefening ›');
-    const items = WARMUP.filter(w => !w.rampSets || ramp);
+    const items = WARMUP.filter(w => (!w.rampSets || ramp) && regionsInSession().has(w.region));
 
     const teken = () => {
       lijst.innerHTML = '';
@@ -460,21 +528,23 @@ export function openWorkout(session, adjust, ctx, timeCap = null, opts = {}) {
     return card;
   }
 
-  /** Aftelklok voor één warming-up-onderdeel. */
+  /** Aftelklok voor één warming-up- of cooling-down-onderdeel (op tijdstip, dus ook goed na app-wissel). */
   function startWarmupTimer(w, tijdEl, klaar) {
-    let rest = w.sec;
+    const until = Date.now() + w.sec * 1000;
+    let last = w.sec;
     tijdEl.classList.add('running');
     const iv = setInterval(() => {
-      rest -= 1;
-      tijdEl.textContent = `${Math.max(0, rest)}s`;
-      if (rest === 3 || rest === 2 || rest === 1) tick();
+      const rest = Math.max(0, Math.ceil((until - Date.now()) / 1000));
+      tijdEl.textContent = `${rest}s`;
+      if (rest !== last && rest <= 3 && rest > 0) tick();
+      last = rest;
       if (rest <= 0) {
         clearInterval(iv);
         tijdEl.classList.remove('running');
         beep();
         klaar();
       }
-    }, 1000);
+    }, 250);
   }
 
   /** Uitleg hoe je naar de tv spiegelt, plus de tv-weergave aanzetten. */
@@ -534,6 +604,18 @@ export function openWorkout(session, adjust, ctx, timeCap = null, opts = {}) {
     target.append(el('div', { class: 'mt', style: 'font-weight:600;color:var(--primary);font-size:.92rem' },
       (slot.suggestion.big ? '⏫ ' : slot.suggestion.isUp ? '↗ ' : slot.suggestion.isDown ? '↘ ' : '↳ ') + slot.suggestion.text
         + (slot.exercise?.dumbbells === 2 && slot.suggestion.weight ? ' (per dumbbell)' : '')));
+    // Vorige keer: wat deed je toen? Zo weet je waar je staat zonder te bladeren.
+    const prev = lastSessionSets(slot.ex);
+    if (prev) {
+      const w0 = prev.sets[0];
+      const weights = [...new Set(prev.sets.map(x => x.band || x.weight).filter(v => v != null))];
+      const wTxt = weights.length ? (weights.length === 1 ? `${weights[0]}${typeof weights[0] === 'number' ? ' kg' : ''} × ` : '') : '';
+      const repsTxt = prev.sets.map(x => weights.length > 1 ? `${x.band || x.weight}×${x.reps}` : x.reps).join(' · ');
+      const rirs = prev.sets.map(x => x.rir).filter(r => r != null);
+      const rirTxt = rirs.length ? ` · RIR ${Math.round(rirs.reduce((t, r) => t + r, 0) / rirs.length)}` : '';
+      target.append(el('div', { class: 'tiny dim', style: 'margin-top:3px' },
+        `Vorige keer (${new Date(prev.date + 'T12:00:00').toLocaleDateString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short' })}): ${wTxt}${repsTxt}${rirTxt}${w0 && !weights.length ? '' : ''}`));
+    }
     if (slot.suggestion.isNew && !slot.suggestion.weight) {
       const est = estimateFromKnown(slot.ex);
       if (est) target.append(el('div', { class: 'tiny', style: 'margin-top:3px;color:var(--primary)' },
@@ -551,7 +633,7 @@ export function openWorkout(session, adjust, ctx, timeCap = null, opts = {}) {
     const slotRows = [];
     const hintEl = el('div', { class: 'tiny mt', style: 'color:var(--warn);display:none' });
     target.append(el('div', { class: 'mt tiny dim', style: 'display:grid;grid-template-columns:40px 1fr 1fr 54px 46px;gap:7px;text-align:center' },
-      el('span', {}), el('span', {}, slot.exercise?.dumbbells === 2 ? 'kg/stuk' : 'kg'), el('span', {}, 'reps'), el('span', {}, 'over'), el('span', {})));
+      el('span', {}), el('span', {}, isBandOnly(slot.exercise) && bandColors().length ? 'band' : slot.exercise?.dumbbells === 2 ? 'kg/stuk' : 'kg'), el('span', {}, 'reps'), el('span', {}, 'over'), el('span', {})));
     target.append(el('div', {}, mySets.map(s => setRow(s, slot, si, slotRows, hintEl))), hintEl);
 
     // alles wat je vooraf leest, niet tijdens de set: cue, notitie, uitvoering, wisselen
@@ -616,17 +698,46 @@ export function openWorkout(session, adjust, ctx, timeCap = null, opts = {}) {
   function setRow(s, slot, si, slotRows, hintEl) {
     // Puur lichaamsgewicht: dan is een kg-veld alleen maar verwarrend.
     const isBw = isBodyweightOnly(slot.exercise);
-    const wIn = isBw
-      ? el('span', { class: 'tiny dim', style: 'text-align:center' }, 'eigen gew.')
-      : el('input', { type: 'number', inputmode: 'decimal', step: '0.5', placeholder: 'kg', value: s.weight ?? '' });
-    const rIn = el('input', { type: 'number', inputmode: 'numeric', placeholder: `${slot.reps[0]}-${slot.reps[1]}`, value: s.reps ?? '' });
+    const isBand = isBandOnly(slot.exercise) && bandColors().length > 0;
+    // Tekstveld i.p.v. number: dan werkt "alles selecteren bij tikken" ook op iOS.
+    const num = (attrs) => el('input', { type: 'text', autocomplete: 'off', ...attrs });
+    const selectAll = (inp) => inp.addEventListener('focus', () => { setTimeout(() => { try { inp.select(); } catch { /* ok */ } }, 0); });
+    let wIn;
+    if (isBand) {
+      wIn = el('select', { style: 'padding:10px 4px;text-align:center' },
+        el('option', { value: '' }, 'band'),
+        bandColors().map(c => el('option', { value: c, selected: s.band === c }, c)));
+      wIn.addEventListener('change', () => { s.band = wIn.value || null; s.userEdited = true; carryDown('band', s.band); persist(); });
+    } else if (isBw) {
+      wIn = el('span', { class: 'tiny dim', style: 'text-align:center' }, 'eigen gew.');
+    } else {
+      wIn = num({ inputmode: 'decimal', placeholder: 'kg', value: s.weight ?? '' });
+      selectAll(wIn);
+      wIn.addEventListener('input', () => {
+        s.weight = wIn.value === '' ? null : parseFloat(String(wIn.value).replace(',', '.'));
+        if (Number.isNaN(s.weight)) s.weight = null;
+        s.userEdited = true;
+        carryDown('weight', s.weight);
+        persist();
+      });
+    }
+    const rIn = num({ inputmode: 'numeric', placeholder: `${slot.reps[0]}-${slot.reps[1]}`, value: s.reps ?? '' });
+    selectAll(rIn);
     const rirIn = el('select', { style: 'padding:10px 4px;text-align:center' },
       el('option', { value: '' }, '·'),
       [0, 1, 2, 3, 4, 5].map(v => el('option', { value: v, selected: s.rir === v }, String(v))));
     const btn = el('button', { class: 'done-btn' + (s.done ? ' done' : '') }, '✓');
-    if (!isBw) wIn.addEventListener('input', () => { s.weight = wIn.value === '' ? null : parseFloat(wIn.value); persist(); });
-    rIn.addEventListener('input', () => { s.reps = rIn.value === '' ? null : parseInt(rIn.value, 10); persist(); });
+    rIn.addEventListener('input', () => { s.reps = rIn.value === '' ? null : parseInt(rIn.value, 10); if (Number.isNaN(s.reps)) s.reps = null; persist(); });
     rirIn.addEventListener('change', () => { s.rir = rirIn.value === '' ? null : parseInt(rirIn.value, 10); persist(); });
+    // Gewicht (of band) van deze set doorzetten naar de latere sets van dezelfde
+    // oefening — tenzij je die zelf al hebt aangepast.
+    function carryDown(field, val) {
+      for (const r of slotRows) {
+        if (r.s.slotIdx !== si || r.s.set <= s.set || r.s.done || r.s.userEdited) continue;
+        r.s[field] = val;
+        if (r.wIn && 'value' in r.wIn) r.wIn.value = val ?? '';
+      }
+    }
     btn.addEventListener('click', () => {
       if (!s.done) {
         if (s.reps == null) { s.reps = slot.reps[1]; rIn.value = s.reps; } // snel loggen: bovengrens
@@ -644,7 +755,7 @@ export function openWorkout(session, adjust, ctx, timeCap = null, opts = {}) {
           const p = pages[pageIdx];
           const klaar = p && pageDone(p);
           const nextP = pages[pageIdx + 1];
-          startRest(slot.rest, klaar && nextP ? { onDone: () => goTo(pageIdx + 1), nextName: nextP.kind === 'ex' ? pageName(nextP) : 'afronden' } : {});
+          startRest(slot.rest, klaar && nextP ? { onDone: () => goTo(pageIdx + 1), nextName: nextP.kind === 'ex' ? pageName(nextP) : nextP.kind === 'cooldown' ? 'de cooling-down' : 'afronden' } : {});
         }
       } else { s.done = false; btn.classList.remove('done'); persist(); }
     });
@@ -771,6 +882,45 @@ export function openWorkout(session, adjust, ctx, timeCap = null, opts = {}) {
   }
 
   renderAll();
+}
+
+function fmtDayNL(iso) {
+  return new Date(iso + 'T12:00:00').toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+/**
+ * Een training die wel is ingevuld maar nooit met "Opslaan" is afgerond, alsnog als
+ * log opslaan (op de dag waarop hij begon). Geeft de log terug, of null.
+ */
+export function saveUnfinishedWorkout(bezig) {
+  const doneSets = (bezig?.sets || []).filter(x => x.done);
+  if (!doneSets.length) { update(st => { st.activeWorkout = null; }); return null; }
+  const session = SESSIONS[bezig.sessionId] || { id: bezig.sessionId, name: 'Workout', slots: [] };
+  const startedAt = bezig.startedAt || bezig.savedAt || Date.now();
+  const log = {
+    id: 'log_' + startedAt,
+    date: todayISO(new Date(startedAt)),
+    sessionId: bezig.sessionId,
+    sessionName: session.name,
+    startedAt,
+    durationSec: Math.min(3 * 3600, Math.max(600, Math.round(((bezig.savedAt || startedAt) - startedAt) / 1000))),
+    sets: doneSets.map(x => ({ ex: x.ex, slotIdx: x.slotIdx, set: x.set, reps: x.reps, weight: x.weight, band: x.band || null, rir: x.rir, done: true })),
+    feel: 3,
+    note: 'Achteraf opgeslagen — was niet afgerond in de app.',
+  };
+  if (get().logs.some(l => l.id === log.id)) { update(st => { st.activeWorkout = null; }); return null; }
+  const best = recordProgress(log);
+  update(st => {
+    st.logs.push(log);
+    for (const [ex, b] of Object.entries(best)) st.lastWeights[ex] = { weight: b.weight, reps: b.reps, date: log.date };
+    st.activeWorkout = null;
+  });
+  if (S().pushToIcu && icu.isConfigured()) {
+    icu.postWorkout(log, session, []).then(actId => {
+      update(st => { const l = st.logs.find(x => x.id === log.id); if (l) l.icuActivityId = actId; });
+    }).catch(() => {});
+  }
+  return log;
 }
 
 /**

@@ -105,6 +105,8 @@ export function renderSettings(app, ctx) {
 
   const dbIn = el('input', { placeholder: 'bijv. 4, 6, 8, 10, 12, 16, 20', value: S().dumbbellWeights || '' });
   dbIn.addEventListener('change', () => update(s => { s.settings.dumbbellWeights = dbIn.value.trim(); }));
+  const bandIn = el('input', { placeholder: 'bijv. geel, rood, zwart (licht → zwaar)', value: S().bandColors || '' });
+  bandIn.addEventListener('change', () => update(s => { s.settings.bandColors = bandIn.value.trim(); }));
   const goalSel = el('select', {},
     el('option', { value: 'recomp', selected: S().goalMode === 'recomp' }, 'Recompositie (spier erbij, vet eraf)'),
     el('option', { value: 'cut', selected: S().goalMode === 'cut' }, 'Cut (vet eraf, spier behouden)'),
@@ -117,9 +119,11 @@ export function renderSettings(app, ctx) {
     el('label', {}, 'Doel'), goalSel,
     el('label', {}, 'Beschikbare dumbbell-gewichten (kg, komma-gescheiden)'), dbIn,
     el('div', { class: 'tiny dim mt' }, 'Ingevuld? Dan stellen gewichtssuggesties altijd een dumbbell voor die je écht hebt. Leeg = vaste stap hieronder.'),
+    el('label', {}, 'Weerstandsbanden (kleuren, licht → zwaar)'), bandIn,
+    el('div', { class: 'tiny dim mt' }, 'Ingevuld? Dan kies je bij bandoefeningen een kleur in plaats van kilo\'s, en onthoudt de app welke band je gebruikte.'),
     el('div', { class: 'spread mt' }, el('span', { class: 'tiny' }, 'Gewichtsstap bij progressie (kg)'), stepIn),
     el('div', { class: 'spread mt' }, el('span', { class: 'tiny' }, 'Lichaamsgewicht (kg, terugval voor eiwitdoel)'), weightIn),
-    el('div', { class: 'tiny dim mt' }, 'Eiwitdoel volgt automatisch je laatst gemeten gewicht (2 g/kg uit je rapport).'),
+    el('div', { class: 'tiny dim mt' }, 'Eiwitdoel volgt automatisch je laatst gemeten gewicht (2 g/kg).'),
     el('button', { class: 'btn-sm mt', onclick: () => {
       if (confirm('Programma-teller terugzetten naar week 1 (vandaag)?')) { update(s => { s.settings.programStart = todayISO(); }); toast('Week 1 gestart'); ctx.render(); }
     } }, 'Herstart programma op week 1')));
@@ -185,7 +189,7 @@ export function renderSettings(app, ctx) {
       'Deze knop gooit alleen de opgeslagen app-bestanden weg en haalt de nieuwste versie op. '
       + 'Je trainingslogs, instellingen en koppelingen blijven gewoon staan — die zitten los van de cache.')));
 
-  app.append(el('p', { class: 'center tiny dim' }, `SMRT.FTNSS v${VERSION} · persoonlijke trainingsapp · gebouwd op je eigen trainingsrapport`));
+  app.append(el('p', { class: 'center tiny dim' }, `SMRT.FTNSS v${VERSION} · persoonlijke trainingsapp · gebouwd op je eigen programma`));
 }
 
 /** Cache en service worker opruimen en opnieuw laden. Raakt je data niet aan. */

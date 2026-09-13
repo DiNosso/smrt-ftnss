@@ -1,9 +1,9 @@
-// Hybride trainingsprogramma — gebaseerd op het rapport
+// Hybride trainingsprogramma
 // "Fysiologische Optimalisatie van Thuistraining voor Hypertrofie en Lichaamsrecompositie"
 //
 // Opzet: 3 langere sessies (45-60 min, zwaar werk dicht bij spierfalen, 2-3 min rust)
 //        + korte dagelijkse snacks (5-15 min) op de overige dagen.
-// Volumedoelen (rapport): borst 12-16 sets/week, biceps/triceps 8-12, core hoog-frequent.
+// Volumedoelen: borst 12-16 sets/week, biceps/triceps 8-12, core hoog-frequent.
 // Progressie: double progression (reps omhoog binnen range, dan gewicht +stap).
 // Deload: elke 5e week, volume x0.6 en RIR 4.
 
@@ -58,7 +58,7 @@ export const SESSIONS = {
     short: 'Core',
     focus: ['core'],
     durationMin: 12,
-    description: 'Korte core-prikkel. De ab-rollout is volgens je rapport de meest impactvolle investering voor je sixpack (anti-extensie met extreme excentrische rek).',
+    description: 'Korte core-prikkel. De ab-rollout is de meest impactvolle investering voor je sixpack (anti-extensie met extreme excentrische rek).',
     warmup: null,
     slots: [
       { ex: 'core_ab_wheel', sets: 3, reps: [6, 12], rir: 1, rest: 90, note: 'Vanaf de knieën, rug licht bol. Zo ver uitrollen als je gecontroleerd terug kunt.' },
@@ -113,31 +113,59 @@ export const SESSIONS = {
  * Begeleide warming-up volgens RAMP (Raise, Activate, Mobilise, Potentiate).
  * Ongeveer 7 minuten. Bewust geen lange statische rekoefeningen vooraf: houd
  * je een spier 60 seconden of langer op rek, dan lever je daarna ~4,6% kracht
- * in (Behm 2016). Korte, bewegende oefeningen kosten je niets en warmen wel op.
+ * in. Korte, bewegende oefeningen kosten je niets en warmen wel op.
  * Rekken doe je na de training, niet ervoor.
  */
+// Warming-up: RAMP, allemaal dynamisch. Statisch rekken vóór het trainen kost kracht
+// en levert niets op; bewegend opwarmen wél. Elk onderdeel heeft een regio, zodat
+// een sessie zonder beenwerk ook geen been-warming-up krijgt.
+//   region: 'all' | 'legs' | 'upper'
 export const WARMUP = [
-  { id: 'wu_raise', name: 'Op temperatuur komen', sec: 90, fase: 'Raise',
+  { id: 'wu_raise', name: 'Op temperatuur komen', sec: 90, fase: 'Raise', region: 'all',
     detail: 'Touwtjespringen, jumping jacks of stevig de trap op en af. Doel: licht buiten adem, warme spieren.',
     why: 'Spiertemperatuur is het belangrijkste dat een warming-up doet — daar komt vrijwel het hele effect vandaan.' },
-  { id: 'wu_legswing', name: 'Beenzwaaien', sec: 60, fase: 'Mobilise', ex: 'mobility_leg_swing',
+  { id: 'wu_legswing', name: 'Beenzwaaien', sec: 60, fase: 'Mobilise', region: 'legs', ex: 'mobility_leg_swing',
     detail: '8x zijwaarts en 8x voor-achter per been. Rustig groter worden, niet forceren.',
     why: 'Brengt je heupen door hun volledige bereik zonder ze te verzwakken.' },
-  { id: 'wu_squat', name: 'Squat zonder gewicht', sec: 45, fase: 'Mobilise', ex: 'quads_goblet_squat',
+  { id: 'wu_hipcircle', name: 'Heupcirkels', sec: 45, fase: 'Mobilise', region: 'legs', ex: 'mobility_hip_circle',
+    detail: '6 cirkels per richting, per been.',
+    why: 'Opent de heup voor deadlift en hip thrust.' },
+  { id: 'wu_squat', name: 'Squat zonder gewicht', sec: 45, fase: 'Mobilise', region: 'legs', ex: 'quads_air_squat',
     detail: '10 langzame squats tot een diepte die comfortabel voelt.',
     why: 'Je oefent het patroon vast in, zonder belasting.' },
-  { id: 'wu_band', name: 'Band pull-apart + doorhalen', sec: 60, fase: 'Activate', ex: 'back_band_pull_apart',
+  { id: 'wu_shoulder', name: 'Schoudercirkels', sec: 45, fase: 'Mobilise', region: 'upper', ex: 'mobility_shoulder_circle',
+    detail: '10 grote cirkels voorwaarts, 10 achterwaarts.',
+    why: 'Warmt het schoudergewricht op voor druk- en trekwerk.' },
+  { id: 'wu_band', name: 'Band pull-apart + doorhalen', sec: 60, fase: 'Activate', region: 'upper', ex: 'back_band_pull_apart',
     detail: '12x pull-apart, daarna 8x de band over je hoofd naar achteren en terug.',
     why: 'Maakt je schouders klaar voor drukwerk en pakt meteen de achterkant aan die bij thuistrainen vaak achterblijft.' },
-  { id: 'wu_catcow', name: 'Kat-koe', sec: 45, fase: 'Mobilise', ex: 'mobility_cat_cow',
-    detail: '8x bol, 8x hol, in het tempo van je adem.',
-    why: 'Maakt je rug en borstwervels los voor het drukken en roeien.' },
-  { id: 'wu_pushup', name: 'Push-ups', sec: 45, fase: 'Potentiate', ex: 'chest_push_up',
+  { id: 'wu_catcow', name: 'Kat-koe', sec: 45, fase: 'Mobilise', region: 'all', ex: 'mobility_cat_cow',
+    detail: '8x bol, 8x hol, in het tempo van je adem. Doorbewegen, nergens vasthouden — dan is het mobilisatie, geen stretch.',
+    why: 'Maakt je rug en borstwervels los voor het drukken en roeien. Vastgehouden rek hoort bij de cooling-down.' },
+  { id: 'wu_pushup', name: 'Push-ups', sec: 45, fase: 'Potentiate', region: 'upper', ex: 'chest_push_up',
     detail: '8-10 rustige push-ups. Op je knieën mag ook.',
     why: 'Belast het drukpatroon licht voor je aan het echte werk begint.' },
-  { id: 'wu_ramp', name: 'Opwarmsets eerste oefening', sec: 120, fase: 'Potentiate', rampSets: true,
+  { id: 'wu_ramp', name: 'Opwarmsets eerste oefening', sec: 120, fase: 'Potentiate', region: 'all', rampSets: true,
     detail: null,
-    why: 'Twee opwarmsets is genoeg. Meer kost alleen energie: bij trainen rond de 10 herhalingen maakt extra opwarmen nauwelijks verschil (Enes 2025).' },
+    why: 'Twee opwarmsets is genoeg. Meer kost alleen energie: bij trainen rond de 10 herhalingen maakt extra opwarmen nauwelijks verschil.' },
+];
+
+// Cooling-down: hier hoort het statische rekken wél. Na de training kost het geen
+// kracht meer, en 30-60 s per stretch is het moment om bewegingsbereik te winnen.
+// (Spierpijn voorkomt het niet — dat doet niets — maar stijfheid en houding wel.)
+export const COOLDOWN = [
+  { id: 'cd_child', name: 'Kindhouding', sec: 45, region: 'all', ex: 'mobility_child_pose',
+    detail: 'Armen ver naar voren, adem diep in je rug.', why: 'Ontspant onderrug en lats na roeien en deadliften.' },
+  { id: 'cd_downdog', name: 'Downward dog', sec: 45, region: 'all', ex: 'mobility_downward_dog',
+    detail: 'Hielen richting de vloer duwen, borst richting dijen.', why: 'Schouders, kuiten en hamstrings in één.' },
+  { id: 'cd_hams', name: 'Hamstrings', sec: 45, region: 'legs', ex: 'mobility_hamstring_stretch',
+    detail: 'Voorover hangen, benen bijna gestrekt. Zwaarte doet het werk.', why: 'De achterkant die van fietsen en deadliften kort wordt.' },
+  { id: 'cd_quad', name: 'Quads', sec: 45, region: 'legs', ex: 'mobility_standing_quad_stretch',
+    detail: 'Hiel naar bil, heup naar voren. Per kant.', why: 'Voorkant dij, na squat-werk en fietsen.' },
+  { id: 'cd_hipflexor', name: 'Heupbuigers', sec: 45, region: 'legs', ex: 'mobility_couch_stretch',
+    detail: 'Kniel, duw de heup naar voren. Per kant.', why: 'Tegengif voor een dag zitten en een dag fietsen.' },
+  { id: 'cd_thoracic', name: 'Borstwervel-brug', sec: 45, region: 'upper', ex: 'mobility_thoracic_bridge',
+    detail: 'Open je borst, reik ver over je hoofd. Per kant.', why: 'Opent de borst na al het drukwerk.' },
 ];
 
 export const WEEK_TEMPLATE = ['sessionA', 'snackCore', 'rest', 'sessionB', 'snackPump', 'rest', 'rest'];
@@ -154,12 +182,12 @@ export const DAILY_HABITS = [
   {
     id: 'protein',
     name: 'Eiwit bij elke hoofdmaaltijd',
-    detail: 'Richtlijn uit je rapport: ~2 g/kg lichaamsgewicht per dag, verdeeld over 3-5 momenten (0,3-0,4 g/kg per maaltijd).',
+    detail: 'Richtlijn: ~2 g/kg lichaamsgewicht per dag, verdeeld over 3-5 momenten (0,3-0,4 g/kg per maaltijd).',
   },
   {
     id: 'sleep',
     name: '7+ uur slaap',
-    detail: 'Het rapport is er hard over: bij <7 uur slaap verschuift gewichtsverlies van vet naar spier (tot 60% meer spierafbraak).',
+    detail: 'bij <7 uur slaap verschuift gewichtsverlies van vet naar spier (tot 60% meer spierafbraak).',
   },
 ];
 
