@@ -4,7 +4,7 @@
 import { get, S, update, todayISO, addDays } from './state.js';
 
 const BASE = 'https://intervals.icu/api/v1';
-const CACHE_TTL_MIN = 30;
+const CACHE_TTL_MIN = 5; // bij openen vrijwel altijd vers; de Sync-knop forceert
 
 function authHeader() {
   const key = S().icuApiKey?.trim();

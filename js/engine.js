@@ -867,6 +867,20 @@ export function buildWorkout(session, adjust = { setFactor: 1, rirBonus: 0, rest
     const rest = Math.min(slot.rest + (adjust.restBonus ?? 0), 165);
     return { ...slot, exercise: ex, sets, rir, rest, suggestion: suggestWeight(slot.ex, slot.reps) };
   });
+  // Gekoppeld gewicht: dezelfde dumbbell als de partner in de superset, dus geen wissel.
+  for (const sl of built) {
+    if (!sl.sameWeightAs) continue;
+    const partner = built.find(o => o.ex === sl.sameWeightAs || o.baseEx === sl.sameWeightAs);
+    const w = partner?.suggestion?.weight;
+    if (!w) continue;
+    const own = sl.suggestion;
+    const pName = partner.exercise?.nameNL || partner.ex;
+    sl.suggestion = { ...own, weight: w, linked: true, isNew: false,
+      text: `${w} kg — zelfde dumbbell als ${pName.toLowerCase()}`,
+      why: own.weight && own.weight !== w
+        ? `Op zichzelf zou je hier ${own.weight} kg pakken, maar wisselen kost meer dan het oplevert. Haal het verschil uit je reps: mik op ${sl.reps[1]}.`
+        : 'Geen wissel binnen de superset. Progressie loopt via reps; wordt het bankdrukken zwaarder, dan volgt dit vanzelf.' };
+  }
   if (timeCapMin) {
     const fitted = fitToTime(built, timeCapMin);
     built = fitted.slots;

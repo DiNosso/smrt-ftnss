@@ -74,6 +74,18 @@ render();
 // Tijdens een lopende workout niet hertekenen — de speler bewaart zelf zijn stand.
 sync.install(() => { if (!document.querySelector('.player-head')) render(); else toast('↻ Gesynchroniseerd met je andere apparaat'); });
 
+// Terug in de app (na een rit, de volgende ochtend): intervals.icu vanzelf verversen
+// en het startscherm hertekenen — niet tijdens een lopende workout.
+import('./icu.js').then(icu => {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible' || !icu.isConfigured()) return;
+    if (document.querySelector('.player-head')) return;
+    const c = get().icuCache;
+    if (c && Date.now() - c.fetchedAt < 5 * 60000) return;
+    icu.refresh().then(() => { if (!document.querySelector('.player-head')) render(); }).catch(() => {});
+  });
+});
+
 // Is de opslag opgeruimd en teruggezet? Dat moet je weten, want dan is er
 // mogelijk iets van de laatste sessie verloren.
 if (window.__HERSTELD) {

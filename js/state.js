@@ -3,7 +3,7 @@
 
 import { mirror } from './backup.js';
 
-export const VERSION = '2.15.0';
+export const VERSION = '2.16.0';
 
 const KEY = 'fait.v1';
 

@@ -91,6 +91,7 @@ export function openWorkout(session, adjust, ctx, timeCap = null, opts = {}) {
       st.activeWorkout = {
         sessionId: session.id, startedAt, savedAt: Date.now(),
         adjust, timeCap, sore,
+        restUntil: restUntilTs || null,
         sets: sets.map(x => ({ ex: x.ex, slotIdx: x.slotIdx, set: x.set, reps: x.reps, weight: x.weight, band: x.band || null, rir: x.rir, done: x.done, userEdited: !!x.userEdited })),
         slotEx: slots.map(sl => sl.ex),
       };
@@ -115,6 +116,8 @@ export function openWorkout(session, adjust, ctx, timeCap = null, opts = {}) {
     if (saved.sets.some(x => x.done)) {
       setTimeout(() => toast(`Training hervat — ${saved.sets.filter(x => x.done).length} sets stonden al ingevuld`), 400);
     }
+    // Liep de rusttimer nog? Dan loopt hij door vanaf waar hij was.
+    if (saved.restUntil && saved.restUntil > Date.now() + 1000) setTimeout(() => startRest(Math.ceil((saved.restUntil - Date.now()) / 1000)), 50);
   }
 
   // superset-partners: volgende slot met dezelfde ss-tag
@@ -132,13 +135,15 @@ export function openWorkout(session, adjust, ctx, timeCap = null, opts = {}) {
 
   // rusttimer met aftel-ring. Is de oefening klaar, dan gaat de speler na de
   // rust vanzelf door naar de volgende; verlengen (+30s) of eerder door kan altijd.
-  let restEl = null, restIv = null;
+  let restEl = null, restIv = null, restVis = null, restUntilTs = null;
   function startRest(seconds, { onDone = null, nextName = null } = {}) {
     stopRest();
     // Op een tijdstip rekenen, niet aftellen: schakel je van app of gaat het scherm
     // op slot, dan loopt de klok gewoon door en klopt hij als je terugkomt.
     const total = seconds;
     let until = Date.now() + seconds * 1000;
+    restUntilTs = until;
+    persist();
     const left = () => Math.max(0, Math.ceil((until - Date.now()) / 1000));
     restState = { left: left(), total };
     const timeEl = el('span', { class: 'time' }, fmtTime(left()));
@@ -155,7 +160,7 @@ export function openWorkout(session, adjust, ctx, timeCap = null, opts = {}) {
       : el('button', { class: 'btn-sm btn-ghost', onclick: stopRest }, '✕');
     restEl = el('div', { class: 'resttimer' },
       rr, timeEl, label,
-      el('button', { class: 'btn-sm', onclick: () => { until += 30000; tickUI(); } }, '+30s'),
+      el('button', { class: 'btn-sm', onclick: () => { until += 30000; restUntilTs = until; persist(); tickUI(); } }, '+30s'),
       skip);
     document.body.append(restEl);
     document.body.classList.add('resting');
@@ -173,9 +178,8 @@ export function openWorkout(session, adjust, ctx, timeCap = null, opts = {}) {
     restVis = () => { if (document.visibilityState === 'visible') tickUI(); };
     document.addEventListener('visibilitychange', restVis);
   }
-  let restVis = null;
   function stopRest() {
-    clearInterval(restIv); restEl?.remove(); restEl = null; restState = null;
+    clearInterval(restIv); restEl?.remove(); restEl = null; restState = null; restUntilTs = null;
     if (restVis) { document.removeEventListener('visibilitychange', restVis); restVis = null; }
     document.body.classList.remove('resting');
   }
@@ -315,8 +319,8 @@ export function openWorkout(session, adjust, ctx, timeCap = null, opts = {}) {
     if (idx < 0 || idx >= pages.length || idx === pageIdx) return;
     const dir = idx > pageIdx ? 1 : -1;
     pageIdx = idx;
-    // eerder doorswipen tijdens de rust = rust overslaan
-    if (dir > 0 && restEl) stopRest();
+    // Vegen laat de rusttimer met rust: even naar een andere oefening kijken mag.
+    // Overslaan doe je met 'Door ›' of ✕ op de timer zelf.
     renderPage(dir);
   }
 
@@ -755,7 +759,8 @@ export function openWorkout(session, adjust, ctx, timeCap = null, opts = {}) {
           const p = pages[pageIdx];
           const klaar = p && pageDone(p);
           const nextP = pages[pageIdx + 1];
-          startRest(slot.rest, klaar && nextP ? { onDone: () => goTo(pageIdx + 1), nextName: nextP.kind === 'ex' ? pageName(nextP) : nextP.kind === 'cooldown' ? 'de cooling-down' : 'afronden' } : {});
+          const target = pageIdx + 1; // vastleggen: ook als je ondertussen ergens anders kijkt, gaat hij hierheen
+          startRest(slot.rest, klaar && nextP ? { onDone: () => goTo(target), nextName: nextP.kind === 'ex' ? pageName(nextP) : nextP.kind === 'cooldown' ? 'de cooling-down' : 'afronden' } : {});
         }
       } else { s.done = false; btn.classList.remove('done'); persist(); }
     });
